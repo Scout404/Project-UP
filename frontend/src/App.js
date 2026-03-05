@@ -1,10 +1,10 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Home from './pages/public/Home.tsx';
 import "./App.css";
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
 
       <Routes>
 
@@ -12,7 +12,7 @@ function App() {
 
       </Routes>
 
-    </BrowserRouter>
+    </Router>
   );
 }
 
