@@ -1,8 +1,11 @@
-public class WishlistItem
+namespace Webshop
 {
-    public int WishlistId { get; set; }
-    public int VariantId { get; set; }
+    public class WishlistItem
+    {
+        public int WishlistId { get; set; }
+        public int VariantId { get; set; }
 
-    public Wishlist Wishlist { get; set; } = null!;
-    public ProductVariant Variant { get; set; } = null!;
+        public Wishlist Wishlist { get; set; } = null!;
+        public ProductVariant Variant { get; set; } = null!;
+    }
 }

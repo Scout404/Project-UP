@@ -1,25 +1,32 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj": {}
+    "C:\\Users\\ivarh\\OneDrive\\Documenten\\GitHub\\Project-UP\\backend\\backend.csproj": {}
   },
   "projects": {
-    "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj": {
+    "C:\\Users\\ivarh\\OneDrive\\Documenten\\GitHub\\Project-UP\\backend\\backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj",
+        "projectUniqueName": "C:\\Users\\ivarh\\OneDrive\\Documenten\\GitHub\\Project-UP\\backend\\backend.csproj",
         "projectName": "backend",
-        "projectPath": "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj",
-        "packagesPath": "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\obj\\",
+        "projectPath": "C:\\Users\\ivarh\\OneDrive\\Documenten\\GitHub\\Project-UP\\backend\\backend.csproj",
+        "packagesPath": "C:\\Users\\ivarh\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ivarh\\OneDrive\\Documenten\\GitHub\\Project-UP\\backend\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\haris_zub3pcb\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\ivarh\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -38,7 +45,7 @@
           "auditLevel": "low",
           "auditMode": "all"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net10.0": {
@@ -47,6 +54,20 @@
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[10.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.0.5, )"
+            },
+            "Npgsql": {
+              "target": "Package",
+              "version": "[10.0.2, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[10.0.1, )"
             }
           },
           "imports": [
@@ -68,7 +89,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
