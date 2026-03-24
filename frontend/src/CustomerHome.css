@@ -1,0 +1,45 @@
+.customer-home {
+  min-height: 100vh;
+  background-color: #f9f9f9;
+}
+
+.customer-navbar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.customer-navbar .navbar-brand h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.customer-navbar .navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.customer-navbar .navbar-user span {
+  font-size: 0.95rem;
+}
+
+.customer-navbar .logout-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.customer-navbar .logout-btn:hover {
+  background-color: #c0392b;
+}
