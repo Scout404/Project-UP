@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Login from './Login';
-import AdminDashboard from './AdminDashboard';
+import AdminPage from './AdminPage';
 import CustomerHome from './CustomerHome';
 
 function App() {
@@ -34,7 +34,7 @@ function App() {
 
   // Route based on user role
   if (user.role === 'Admin') {
-    return <AdminDashboard user={user} onLogout={handleLogout} />;
+    return <AdminPage user={user} onLogout={handleLogout} />;
   } else if (user.role === 'Customer') {
     return <CustomerHome user={user} onLogout={handleLogout} />;
   }
