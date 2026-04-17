@@ -33,6 +33,13 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast");
 
+app.MapGet("/searchFunc", (string? searchedProduct,int? categoryId,string? brand,decimal? minPrice,decimal? maxPrice,int? colorId,int? sizeId) =>
+{
+    var search = new SearchFunction();
+
+    return search.Search(searchedProduct,categoryId,brand, minPrice,maxPrice,colorId,sizeId);
+});
+
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)

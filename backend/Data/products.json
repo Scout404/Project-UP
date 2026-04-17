@@ -1,0 +1,92 @@
+[
+  {
+    "ProductId": 1,
+    "Name": "White Shirt",
+    "Description": "White long sleeve shirt",
+    "CategoryId": 1,
+    "Brand": "SuitSupply",
+    "BasePrice": 29.99,
+    "IsActive": true
+  },
+  {
+    "ProductId": 2,
+    "Name": "Formal Shirt",
+    "Description": "White formal shirt",
+    "CategoryId": 1,
+    "Brand": "SuitSupply",
+    "BasePrice": 34.99,
+    "IsActive": true
+  },
+  {
+    "ProductId": 3,
+    "Name": "Chino Trousers",
+    "Description": "Slim fit chinos",
+    "CategoryId": 2,
+    "Brand": "SuitSupply",
+    "BasePrice": 49.99,
+    "IsActive": true
+  },
+  {
+    "ProductId": 4,
+    "Name": "Black Suit Trousers",
+    "Description": "Black formal trousers",
+    "CategoryId": 2,
+    "Brand": "SuitSupply",
+    "BasePrice": 59.99,
+    "IsActive": true
+  },
+  {
+    "ProductId": 5,
+    "Name": "Jeans",
+    "Description": "Blue regular fit jeans",
+    "CategoryId": 2,
+    "Brand": "SuitSupply",
+    "BasePrice": 69.99,
+    "IsActive": true
+  },
+  {
+    "ProductId": 6,
+    "Name": "Linen Shirt",
+    "Description": "Light linen shirt",
+    "CategoryId": 1,
+    "Brand": "SuitSupply",
+    "BasePrice": 44.99,
+    "IsActive": true
+  },
+  {
+    "ProductId": 7,
+    "Name": "Blazer",
+    "Description": "Navy blazer",
+    "CategoryId": 3,
+    "Brand": "SuitSupply",
+    "BasePrice": 149.99,
+    "IsActive": true
+  },
+  {
+    "ProductId": 8,
+    "Name": "Suit Jacket",
+    "Description": "Slim fit suit jacket",
+    "CategoryId": 3,
+    "Brand": "SuitSupply",
+    "BasePrice": 199.99,
+    "IsActive": true
+  },
+  {
+    "ProductId": 9,
+    "Name": "Polo Shirt",
+    "Description": "Basic polo shirt",
+    "CategoryId": 1,
+    "Brand": "SuitSupply",
+    "BasePrice": 39.99,
+    "IsActive": true
+  },
+  {
+    "ProductId": 10,
+    "Name": "Suit Set",
+    "Description": "Black formal suit",
+    "CategoryId": 3,
+    "Brand": "SuitSupply",
+    "BasePrice": 249.99,
+    "IsActive": true
+  }
+]

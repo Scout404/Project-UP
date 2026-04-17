@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj": {}
+    "/Users/s/Desktop/Project-UP/backend/backend.csproj": {}
   },
   "projects": {
-    "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj": {
+    "/Users/s/Desktop/Project-UP/backend/backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj",
+        "projectUniqueName": "/Users/s/Desktop/Project-UP/backend/backend.csproj",
         "projectName": "backend",
-        "projectPath": "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj",
-        "packagesPath": "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\obj\\",
+        "projectPath": "/Users/s/Desktop/Project-UP/backend/backend.csproj",
+        "packagesPath": "/Users/s/.nuget/packages/",
+        "outputPath": "/Users/s/Desktop/Project-UP/backend/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\haris_zub3pcb\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/Users/s/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -68,7 +68,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.103/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
