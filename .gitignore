@@ -55,6 +55,9 @@ artifacts/
 *.nuget.props
 *.nuget.targets
 
+## EF Core — migrations are committed so teammates get schema changes automatically
+## Do NOT add Migrations/ here
+
 # ===========================
 # React (Frontend)
 # ===========================
@@ -68,6 +71,7 @@ frontend/coverage/
 
 ## Production
 frontend/build/
+frontend/dist/
 
 ## Misc
 frontend/.DS_Store
@@ -98,9 +102,14 @@ frontend/yarn-error.log*
 .env
 .env.local
 .env.*.local
+
+## Backend config:
+## - appsettings.json                     → committed (no secrets)
+## - appsettings.Development.json         → gitignored (has your DB password)
+## - appsettings.Development.Example.json → committed (safe template for teammates)
 appsettings.Development.json
-appsettings.*.json
-!appsettings.json
+appsettings.Production.json
+appsettings.Staging.json
 
 # ===========================
 # Database
