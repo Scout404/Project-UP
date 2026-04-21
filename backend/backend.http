@@ -1,6 +1,40 @@
 @backend_HostAddress = http://localhost:5250
 
-GET {{backend_HostAddress}}/weatherforecast/
+### Health Check
+GET {{backend_HostAddress}}/health
 Accept: application/json
+
+###
+
+### Login with JSON - Valid Credentials
+POST {{backend_HostAddress}}/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "testpass"
+}
+
+###
+
+### Login with JSON - Admin Credentials
+POST {{backend_HostAddress}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+###
+
+### Login with JSON - Invalid Credentials
+POST {{backend_HostAddress}}/login
+Content-Type: application/json
+
+{
+  "username": "invalid",
+  "password": "wrongpass"
+}
 
 ###
