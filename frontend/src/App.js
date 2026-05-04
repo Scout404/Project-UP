@@ -3,56 +3,84 @@ import './App.css';
 import Login from './Login';
 import AdminPage from './AdminPage';
 import CustomerHome from './CustomerHome';
+import { CartProvider } from "./CartContext";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is already logged in
+useEffect(() => {
+  try {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setIsLoggedIn(true);
+      const parsed = JSON.parse(savedUser);
+      console.log("[APP DEBUG] Loaded user from localStorage:", parsed);
+      setUser(parsed);
     }
-  }, []);
+  } catch (err) {
+    console.error("Error parsing user:", err);
+    localStorage.removeItem('user');
+  }
+  setLoading(false);
+}, []);
 
-  const handleLoginSuccess = (userData) => {
-    setUser(userData);
-    setIsLoggedIn(true);
-  };
+const handleLoginSuccess = (userData) => {
+  console.log("[APP DEBUG] userData:", userData);
+  console.log("[APP DEBUG] userData.id:", userData?.id);
+  console.log("[APP DEBUG] userData.customer_id:", userData?.customer_id);
+  localStorage.setItem('user', JSON.stringify(userData));
+  setUser(userData);
+};
 
-  const handleLogout = () => {
+const handleLogout = () => {
     localStorage.removeItem('user');
     setUser(null);
-    setIsLoggedIn(false);
   };
 
-  if (!isLoggedIn) {
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Route based on user role
+  if (user.role === 'Customer') {
+    console.log("[APP DEBUG] About to render CartProvider with user:", user);
+    return (
+      <CartProvider user={user}>
+        <CustomerHome
+          user={user}
+          onLogout={handleLogout}
+        />
+      </CartProvider>
+    );
+  }
+  
   if (user.role === 'Admin') {
-    return <AdminPage user={user} onLogout={handleLogout} />;
-  } else if (user.role === 'Customer') {
-    return <CustomerHome user={user} onLogout={handleLogout} />;
+    return (
+      <AdminPage
+        user={user}
+        onLogout={handleLogout}
+      />
+    );
   }
 
-  // Fallback (shouldn't happen)
+  if (user.role === 'Customer') {
+    return (
+      <CartProvider user={user}>
+        <CustomerHome
+          user={user}
+          onLogout={handleLogout}
+        />
+      </CartProvider>
+    );
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <div className="navbar">
-          <h1>Welcome, {user.username}!</h1>
-          <button onClick={handleLogout} className="logout-btn">
-            Logout
-          </button>
-        </div>
-      </header>
-      <main>
-        <p>Unknown user role.</p>
-      </main>
+      <h1>Unknown role: {user.role}</h1>
+      <button onClick={handleLogout}>Logout</button>
     </div>
   );
 }

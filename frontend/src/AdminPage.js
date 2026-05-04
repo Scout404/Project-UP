@@ -1,138 +1,166 @@
 import React, { useState, useEffect } from 'react';
 import './AdminDashboard.css';
 
-const defaultInventory = [
-  { id: 1, name: 'Shirt', price: '20', stock: '50' },
-  { id: 2, name: 'Pants', price: '50', stock: '20' }
-];
-
 function AdminPage({ user, onLogout }) {
-  const [items, setItems] = useState(() => {
-    const saved = localStorage.getItem('adminInventory');
-    const parsed = saved ? JSON.parse(saved) : defaultInventory;
-    return parsed.map(item => ({
-      ...item,
-      price: item.price?.toString() ?? '0',
-      stock: item.stock?.toString() ?? '0'
-    }));
-  });
+  const [items, setItems] = useState([]);
 
   useEffect(() => {
-    localStorage.setItem('adminInventory', JSON.stringify(items));
-  }, [items]);
+    fetch("http://localhost:5250/products")
+      .then(res => res.json())
+      .then(data => {
+        setItems(data);
+      })
+      .catch(err => console.error("Load error:", err));
+  }, []);
+
+  const addItem = async () => {
+    const newItem = {
+      name: "New Item",
+      basePrice: 0,
+      stock: 0,
+      category: "Clothes"
+    };
+
+    try {
+      const res = await fetch("http://localhost:5250/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newItem)
+      });
+
+      if (!res.ok) return;
+
+      const updated = await fetch("http://localhost:5250/products");
+      const data = await updated.json();
+      setItems(data);
+
+    } catch (err) {
+      console.error("Add item error:", err);
+    }
+  };
+
+  const saveItem = async (item) => {
+    try {
+      await fetch(`http://localhost:5250/products/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item)
+      });
+    } catch (err) {
+      console.error("Save failed:", err);
+    }
+  };
 
   const handleChange = (id, field, value) => {
-    setItems(items.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setItems(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
   };
 
-  const addItem = () => {
-    setItems([
-      ...items,
-      {
-        id: Date.now(),
-        name: 'New Item',
-        price: '0',
-        stock: '0'
-      }
-    ]);
-  };
+  const removeItem = async (id) => {
+    try {
+      await fetch(`http://localhost:5250/products/${id}`, {
+        method: "DELETE"
+      });
 
-  const removeItem = (id) => {
-    setItems(items.filter(item => item.id !== id));
+      setItems(prev => prev.filter(i => i.id !== id));
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
   };
-
-  const totalStock = items.reduce((sum, item) => sum + Number(item.stock || 0), 0);
-  const totalItems = items.length;
 
   return (
     <div className="admin-dashboard">
+
+      {/* HEADER */}
       <header className="admin-header">
         <div>
           <p className="eyebrow">Admin page</p>
           <h1>Product management</h1>
-          <p className="subtitle">
-            Add, update, or delete inventory items.
-          </p>
         </div>
 
         <div className="admin-actions">
-          <p className="admin-user">Logged in as {user.username}</p>
-          <button className="logout-btn" onClick={onLogout}>Logout</button>
-          <button className="primary-btn" onClick={addItem}>+ New product</button>
+          <p>Logged in as {user.username}</p>
+
+          <button onClick={onLogout}>Logout</button>
+
+          <button className="primary-btn" onClick={addItem}>
+            + New product
+          </button>
         </div>
       </header>
 
+      {/* STATS */}
       <section className="stats-grid">
         <div className="stat-card">
-          <p className="stat-label">Total items</p>
-          <p className="stat-value">{totalItems}</p>
-        </div>
-        <div className="stat-card">
-          <p className="stat-label">Total stock</p>
-          <p className="stat-value">{totalStock}</p>
+          <p>Total items</p>
+          <h2>{items.length}</h2>
         </div>
       </section>
 
-      <section className="inventory-panel">
-        <div className="panel-head">
-          <div>
-            <h2>Inventory list</h2>
-            <p>Update each row inline, then delete items as needed.</p>
-          </div>
-        </div>
+      {/* PRODUCT LIST */}
+      <section className="inventory-list">
+        {items.length === 0 ? (
+          <p>No products found.</p>
+        ) : (
+          items.map(item => (
+            <div key={item.id} className="product-row">
 
-        <div className="table-frame">
-          <table className="inventory-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Price (€)</th>
-                <th>Stock</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(item => (
-                <tr key={item.id}>
-                  <td>
-                    <input
-                      className="table-input"
-                      type="text"
-                      value={item.name}
-                      onChange={(e) => handleChange(item.id, 'name', e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="table-input"
-                      type="number"
-                      min="0"
-                      value={item.price}
-                      onChange={(e) => handleChange(item.id, 'price', e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="table-input"
-                      type="number"
-                      min="0"
-                      value={item.stock}
-                      onChange={(e) => handleChange(item.id, 'stock', e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <button className="danger-btn" onClick={() => removeItem(item.id)}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              <div className="field">
+                <label>Name</label>
+                <input
+                  value={item.name || ""}
+                  onChange={(e) =>
+                    handleChange(item.id, "name", e.target.value)
+                  }
+                />
+              </div>
+
+              <div className="field">
+                <label>Price</label>
+                <input
+                  type="number"
+                  value={item.basePrice ?? 0}
+                  onChange={(e) =>
+                    handleChange(item.id, "basePrice", Number(e.target.value))
+                  }
+                />
+              </div>
+
+              <div className="field">
+                <label>Stock</label>
+                <input
+                  type="number"
+                  value={item.stock ?? 0}
+                  onChange={(e) =>
+                    handleChange(item.id, "stock", Number(e.target.value))
+                  }
+                />
+              </div>
+
+              <div className="actions">
+                <button
+                  className="save-btn"
+                  onClick={() => saveItem(item)}
+                >
+                  Save
+                </button>
+
+                <button
+                  className="delete-btn"
+                  onClick={() => removeItem(item.id)}
+                >
+                  Delete
+                </button>
+              </div>
+
+            </div>
+          ))
+        )}
       </section>
+
     </div>
   );
 }

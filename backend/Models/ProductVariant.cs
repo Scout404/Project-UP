@@ -1,6 +1,6 @@
 public class ProductVariant
 {
-    public int VariantId { get; set; }
+    public int ProductVariantId { get; set; }
     public int ProductId { get; set; }
     public int SizeId { get; set; }
     public int ColorId { get; set; }

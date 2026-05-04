@@ -26,7 +26,8 @@ function Login({ onLoginSuccess }) {
 
       if (response.ok) {
         const data = await response.json();
-        const userData = { 
+        const userData = {
+          id: data.id,
           username: data.username, 
           role: data.role 
         };
@@ -84,7 +85,7 @@ function Login({ onLoginSuccess }) {
         <div className="test-credentials">
           <p><strong>Test Credentials:</strong></p>
           <p>Customer - Username: <code>testuser</code></p>
-          <p>Customer - Password: <code>testpass</code></p>
+          <p>Customer - Password: <code>test123</code></p>
           <p>Or</p>
           <p>Admin - Username: <code>admin</code></p>
           <p>Admin - Password: <code>admin123</code></p>

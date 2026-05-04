@@ -6,7 +6,6 @@ public enum OrderStatus
     Cancelled,
     Completed
 }
-
 public class Orders
 {
     public int OrderId { get; set; }
