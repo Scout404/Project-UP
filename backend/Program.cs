@@ -229,4 +229,11 @@ app.MapDelete("/cart/remove/{userId}/{variantId}", (AppDbContext db, int userId,
     return Results.Ok(cartDto);
 });
 
+app.MapGet("/searchFunc", (string? searchedProduct,int? categoryId,string? brand,decimal? minPrice,decimal? maxPrice,int? colorId,int? sizeId) =>
+{
+    var search = new SearchFunction();
+
+    return search.Search(searchedProduct,categoryId,brand, minPrice,maxPrice,colorId,sizeId);
+});
+
 app.Run();
