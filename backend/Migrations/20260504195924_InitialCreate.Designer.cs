@@ -12,7 +12,7 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260424092039_InitialCreate")]
+    [Migration("20260504195924_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -75,7 +75,8 @@ namespace backend.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<decimal>("Price")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
@@ -88,6 +89,23 @@ namespace backend.Migrations
                     b.HasIndex("CartId");
 
                     b.ToTable("CartItems");
+                });
+
+            modelBuilder.Entity("Category", b =>
+                {
+                    b.Property<int>("CategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("CategoryId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("CategoryId");
+
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("Color", b =>
@@ -104,7 +122,7 @@ namespace backend.Migrations
 
                     b.HasKey("ColorId");
 
-                    b.ToTable("Color");
+                    b.ToTable("Colors");
                 });
 
             modelBuilder.Entity("Customer", b =>
@@ -143,11 +161,8 @@ namespace backend.Migrations
 
             modelBuilder.Entity("OrderAddress", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("OrderId")
                         .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -157,9 +172,6 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("OrderId")
-                        .HasColumnType("int");
-
                     b.Property<string>("PostalCode")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -168,12 +180,9 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.HasKey("Id");
+                    b.HasKey("OrderId");
 
-                    b.HasIndex("OrderId")
-                        .IsUnique();
-
-                    b.ToTable("OrderAddresses");
+                    b.ToTable("OrderAddress");
                 });
 
             modelBuilder.Entity("OrderItem", b =>
@@ -187,8 +196,12 @@ namespace backend.Migrations
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("OrdersOrderId")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("Price")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
@@ -200,9 +213,11 @@ namespace backend.Migrations
 
                     b.HasIndex("OrderId");
 
+                    b.HasIndex("OrdersOrderId");
+
                     b.HasIndex("VariantId");
 
-                    b.ToTable("OrderItem");
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("Orders", b =>
@@ -234,16 +249,24 @@ namespace backend.Migrations
 
             modelBuilder.Entity("Product", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("ProductId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ProductId"));
 
                     b.Property<decimal>("BasePrice")
-                        .HasColumnType("decimal(65,30)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("Category")
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("longtext");
 
@@ -254,10 +277,9 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("Stock")
-                        .HasColumnType("int");
+                    b.HasKey("ProductId");
 
-                    b.HasKey("Id");
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("Products");
                 });
@@ -271,6 +293,9 @@ namespace backend.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ProductVariantId"));
 
                     b.Property<int>("ColorId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ColorId1")
                         .HasColumnType("int");
 
                     b.Property<int>("MaxStock")
@@ -296,11 +321,13 @@ namespace backend.Migrations
 
                     b.HasIndex("ColorId");
 
+                    b.HasIndex("ColorId1");
+
                     b.HasIndex("ProductId");
 
                     b.HasIndex("SizeId");
 
-                    b.ToTable("ProductVariant");
+                    b.ToTable("ProductVariants");
                 });
 
             modelBuilder.Entity("Review", b =>
@@ -330,7 +357,7 @@ namespace backend.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("Review");
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("Size", b =>
@@ -347,7 +374,7 @@ namespace backend.Migrations
 
                     b.HasKey("SizeId");
 
-                    b.ToTable("Size");
+                    b.ToTable("Sizes");
                 });
 
             modelBuilder.Entity("Wishlist", b =>
@@ -377,7 +404,7 @@ namespace backend.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("WishlistItemId"));
 
-                    b.Property<int>("VariantId")
+                    b.Property<int>("ProductVariantId")
                         .HasColumnType("int");
 
                     b.Property<int>("WishlistId")
@@ -385,11 +412,11 @@ namespace backend.Migrations
 
                     b.HasKey("WishlistItemId");
 
-                    b.HasIndex("VariantId");
+                    b.HasIndex("ProductVariantId");
 
                     b.HasIndex("WishlistId");
 
-                    b.ToTable("WishlistItem");
+                    b.ToTable("WishlistItems");
                 });
 
             modelBuilder.Entity("backend.Models.Cart", b =>
@@ -404,6 +431,8 @@ namespace backend.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Carts");
                 });
@@ -476,15 +505,19 @@ namespace backend.Migrations
             modelBuilder.Entity("OrderItem", b =>
                 {
                     b.HasOne("Orders", "Order")
-                        .WithMany("Items")
+                        .WithMany()
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Orders", null)
+                        .WithMany("Items")
+                        .HasForeignKey("OrdersOrderId");
+
                     b.HasOne("ProductVariant", "Variant")
                         .WithMany("OrderItems")
                         .HasForeignKey("VariantId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Order");
@@ -503,21 +536,42 @@ namespace backend.Migrations
                     b.Navigation("Customer");
                 });
 
+            modelBuilder.Entity("Product", b =>
+                {
+                    b.HasOne("Category", "Category")
+                        .WithMany("Products")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("ProductVariant", b =>
                 {
                     b.HasOne("Color", "Color")
-                        .WithMany("Variants")
+                        .WithMany()
                         .HasForeignKey("ColorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Product", "Product")
+                    b.HasOne("Size", "Size")
                         .WithMany()
+                        .HasForeignKey("ColorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Color", null)
+                        .WithMany("Variants")
+                        .HasForeignKey("ColorId1");
+
+                    b.HasOne("Product", "Product")
+                        .WithMany("Variants")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Size", "Size")
+                    b.HasOne("Size", null)
                         .WithMany("Variants")
                         .HasForeignKey("SizeId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -539,7 +593,7 @@ namespace backend.Migrations
                         .IsRequired();
 
                     b.HasOne("Product", "Product")
-                        .WithMany()
+                        .WithMany("Reviews")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -562,9 +616,9 @@ namespace backend.Migrations
 
             modelBuilder.Entity("WishlistItem", b =>
                 {
-                    b.HasOne("ProductVariant", "Variant")
+                    b.HasOne("ProductVariant", "ProductVariant")
                         .WithMany("WishlistItems")
-                        .HasForeignKey("VariantId")
+                        .HasForeignKey("ProductVariantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -574,9 +628,14 @@ namespace backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Variant");
+                    b.Navigation("ProductVariant");
 
                     b.Navigation("Wishlist");
+                });
+
+            modelBuilder.Entity("Category", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("Color", b =>
@@ -601,6 +660,13 @@ namespace backend.Migrations
 
                     b.Navigation("OrderAddress")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Product", b =>
+                {
+                    b.Navigation("Reviews");
+
+                    b.Navigation("Variants");
                 });
 
             modelBuilder.Entity("ProductVariant", b =>

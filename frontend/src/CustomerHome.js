@@ -1,27 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import './CustomerHome.css';
+import LoginModal from './LoginModal';
 import { useCart } from './CartContext';
 
-function CustomerHome({ user, onLogout }) {
+function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const categories = ['home', 'clothes', 'accessoires', 'collections'];
   const links = ['contact', 'about us', 'support'];
 
   const { cart, addToCart, removeFromCart } = useCart();
 
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [activePage, setActivePage] = useState("home");
 
   useEffect(() => {
-    fetch("http://localhost:5250/products")
+    fetch("http://localhost:5050/products")
       .then(res => res.json())
-      .then(setProducts);
+      .then(setProducts)
+      .catch(err => console.error("Failed to fetch products:", err));
   }, []);
 
   const filteredProducts = products.filter(
-    p =>
-      p.category?.toLowerCase() === activePage &&
-      Number(p.stock ?? 0) > 0
+    p => p.categoryName?.toLowerCase() === activePage && p.isActive
   );
 
   const totalPrice =
@@ -29,6 +30,11 @@ function CustomerHome({ user, onLogout }) {
       (sum, item) => sum + (Number(item.price) || 0) * item.quantity,
       0
     ) || 0;
+
+  const handleLoginSuccess = (userData) => {
+    setIsLoginModalOpen(false);
+    onLoginSuccess(userData);
+  };
 
   return (
     <div className="customer-home">
@@ -64,15 +70,48 @@ function CustomerHome({ user, onLogout }) {
               🛒
             </button>
 
-            <button className="icon-btn">👤</button>
+            {/* Account button - opens login modal if guest, shows user menu if logged in */}
+            {!user ? (
+              <button
+                className="icon-btn"
+                onClick={() => setIsLoginModalOpen(true)}
+                title="Login or create account"
+              >
+                👤
+              </button>
+            ) : (
+              <button className="icon-btn" title={`Logged in as ${user.username}`}>
+                👤
+              </button>
+            )}
 
-            <button className="logout-btn" onClick={onLogout}>
-              Logout
-            </button>
+            {/* Logout button - only visible if logged in */}
+            {user && (
+              <button className="logout-btn" onClick={onLogout}>
+                Logout
+              </button>
+            )}
+
+            {/* Login button - only visible if guest */}
+            {!user && (
+              <button 
+                className="logout-btn" 
+                onClick={() => setIsLoginModalOpen(true)}
+              >
+                Login
+              </button>
+            )}
           </div>
 
         </nav>
       </header>
+
+      {/* LOGIN MODAL */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
 
       {/* MAIN */}
       <main className="customer-main">
@@ -108,21 +147,21 @@ function CustomerHome({ user, onLogout }) {
               <p>No items found.</p>
             ) : (
               filteredProducts.map(p => {
-                const price = Number(p.price ?? p.basePrice ?? 0);
+                const id = p.productId; 
+                const price = p.basePrice || 0;
 
                 return (
-                  <div key={p.id} className="product-card">
-
+                  <div key={id} className="product-card">
                     <h3>{p.name}</h3>
-
-                    <p>€ {price.toFixed(2)}</p>
+                    <p className="brand-tag">{p.brand}</p>
+                    <p className="price-tag">€ {Number(price).toFixed(2)}</p>
 
                     <button
                       onClick={() => {
                         addToCart({
-                          variantId: p.id,
+                          variantId: id,
                           name: p.name,
-                          price: price,
+                          price: Number(price),
                           quantity: 1
                         });
                       }}

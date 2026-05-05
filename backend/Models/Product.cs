@@ -1,12 +1,15 @@
 public class Product
 {
-    public int Id { get; set; }
-
-    public required string Name { get; set; }
+    public int ProductId { get; set; }
+    public string Name { get; set; } = null!;
+    public string Description { get; set; } = null!;
+    public int CategoryId { get; set; }
+    public string Brand { get; set; } = null!;
     public decimal BasePrice { get; set; }
-    public int Stock { get; set; }
+    public bool IsActive { get; set; } = true;
 
-    public required string Category { get; set; }
-
-    public bool IsActive { get; set; }
+    // Navigation
+    public Category Category { get; set; } = null!;
+    public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

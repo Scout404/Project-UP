@@ -1,168 +1,411 @@
 import React, { useState, useEffect } from 'react';
 import './AdminDashboard.css';
 
-function AdminPage({ user, onLogout }) {
-  const [items, setItems] = useState([]);
+function AdminPanel({ user, onLogout }) {
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    brand: '',
+    basePrice: '',
+    categoryId: '',
+    isActive: true
+  });
+  const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('add');
 
+  // Fetch categories and products
   useEffect(() => {
-    fetch("http://localhost:5250/products")
-      .then(res => res.json())
-      .then(data => {
-        setItems(data);
-      })
-      .catch(err => console.error("Load error:", err));
+    fetchCategories();
+    fetchProducts();
   }, []);
 
-  const addItem = async () => {
-    const newItem = {
-      name: "New Item",
-      basePrice: 0,
-      stock: 0,
-      category: "Clothes"
-    };
-
+  const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5250/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newItem)
-      });
-
-      if (!res.ok) return;
-
-      const updated = await fetch("http://localhost:5250/products");
-      const data = await updated.json();
-      setItems(data);
-
+      const response = await fetch('http://localhost:5050/debug/categories');
+      const data = await response.json();
+      setCategories(data.categories);
     } catch (err) {
-      console.error("Add item error:", err);
+      console.error('Failed to fetch categories:', err);
     }
   };
 
-  const saveItem = async (item) => {
+  const fetchProducts = async () => {
     try {
-      await fetch(`http://localhost:5250/products/${item.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item)
-      });
+      const response = await fetch('http://localhost:5050/products');
+      const data = await response.json();
+      setProducts(data);
     } catch (err) {
-      console.error("Save failed:", err);
+      console.error('Failed to fetch products:', err);
     }
   };
 
-  const handleChange = (id, field, value) => {
-    setItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, [field]: value } : item
-      )
-    );
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
-  const removeItem = async (id) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    if (!formData.name || !formData.categoryId || !formData.basePrice) {
+      setMessage('❌ Please fill in all required fields');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await fetch(`http://localhost:5250/products/${id}`, {
-        method: "DELETE"
+      const url = editingId 
+        ? `http://localhost:5050/products/${editingId}`
+        : 'http://localhost:5050/products';
+      
+      const method = editingId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          brand: formData.brand,
+          basePrice: parseFloat(formData.basePrice),
+          categoryId: parseInt(formData.categoryId),
+          isActive: formData.isActive
+        })
       });
 
-      setItems(prev => prev.filter(i => i.id !== id));
+      if (response.ok) {
+        setFormData({
+          name: '',
+          description: '',
+          brand: '',
+          basePrice: '',
+          categoryId: '',
+          isActive: true
+        });
+        setEditingId(null);
+        setActiveTab('list');
+        fetchProducts(); // Refresh product list
+      } else {
+        setMessage('❌ Failed to save product');
+      }
     } catch (err) {
-      console.error("Delete failed:", err);
+      setMessage('❌ Error: ' + err.message);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleEditProduct = (product) => {
+    setFormData({
+      name: product.name,
+      description: product.description,
+      brand: product.brand,
+      basePrice: product.basePrice,
+      categoryId: product.categoryId,
+      isActive: product.isActive
+    });
+    setEditingId(product.productId);
+    setActiveTab('add');
+    setMessage('');
+  };
+
+  const handleCancelEdit = () => {
+    setFormData({
+      name: '',
+      description: '',
+      brand: '',
+      basePrice: '',
+      categoryId: '',
+      isActive: true
+    });
+    setEditingId(null);
+    setMessage('');
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      try {
+        const response = await fetch(`http://localhost:5050/products/${productId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          setMessage('✅ Product deleted successfully!');
+          fetchProducts();
+        } else {
+          setMessage('❌ Failed to delete product');
+        }
+      } catch (err) {
+        setMessage('❌ Error: ' + err.message);
+      }
+    }
+  };
+
+  const toggleProductStatus = async (product) => {
+    try {
+      const response = await fetch(`http://localhost:5050/products/${product.productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: product.name,
+          description: product.description,
+          brand: product.brand,
+          basePrice: product.basePrice,
+          categoryId: product.categoryId,
+          isActive: !product.isActive
+        })
+      });
+
+      if (response.ok) {
+        const newStatus = !product.isActive ? 'Active' : 'Inactive';
+        setMessage(`✅ Product "${product.name}" is now ${newStatus}!`);
+        fetchProducts();
+      } else {
+        setMessage('❌ Failed to update product status');
+      }
+    } catch (err) {
+      setMessage('❌ Error: ' + err.message);
+    }
+  };
+
+  const getCategoryName = (categoryId) => {
+    const cat = categories.find(c => c.categoryId === categoryId);
+    return cat ? cat.name : 'Unknown';
   };
 
   return (
-    <div className="admin-dashboard">
-
+    <div className="admin-panel">
       {/* HEADER */}
       <header className="admin-header">
-        <div>
-          <p className="eyebrow">Admin page</p>
-          <h1>Product management</h1>
+        <div className="admin-header-top">
+          <h1>Admin Dashboard</h1>
+          <div className="admin-user-info">
+            <span>Welcome, <strong>{user?.username}</strong></span>
+            <button className="logout-btn" onClick={onLogout}>Logout</button>
+          </div>
         </div>
 
-        <div className="admin-actions">
-          <p>Logged in as {user.username}</p>
-
-          <button onClick={onLogout}>Logout</button>
-
-          <button className="primary-btn" onClick={addItem}>
-            + New product
+        <div className="admin-tabs">
+          <button
+            className={`tab-btn ${activeTab === 'add' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('add');
+              handleCancelEdit();
+            }}
+          >
+            {editingId ? '✏️ Edit Product' : '➕ Add Product'}
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'list' ? 'active' : ''}`}
+            onClick={() => setActiveTab('list')}
+          >
+            📋 Products ({products.length})
           </button>
         </div>
       </header>
 
-      {/* STATS */}
-      <section className="stats-grid">
-        <div className="stat-card">
-          <p>Total items</p>
-          <h2>{items.length}</h2>
+      {/* MESSAGE */}
+      {message && (
+        <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
+          {message}
         </div>
-      </section>
+      )}
 
-      {/* PRODUCT LIST */}
-      <section className="inventory-list">
-        {items.length === 0 ? (
-          <p>No products found.</p>
-        ) : (
-          items.map(item => (
-            <div key={item.id} className="product-row">
+      {/* MAIN */}
+      <main className="admin-main">
+        {/* ADD/EDIT PRODUCT TAB */}
+        {activeTab === 'add' && (
+          <section className="admin-section add-product-section">
+            <h2>{editingId ? 'Edit Product' : 'Add New Product'}</h2>
 
-              <div className="field">
-                <label>Name</label>
+            <form onSubmit={handleSubmit} className="product-form">
+              <div className="form-group">
+                <label htmlFor="name">Product Name *</label>
                 <input
-                  value={item.name || ""}
-                  onChange={(e) =>
-                    handleChange(item.id, "name", e.target.value)
-                  }
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="e.g., Cotton T-Shirt"
+                  required
                 />
               </div>
 
-              <div className="field">
-                <label>Price</label>
+              <div className="form-group">
+                <label htmlFor="brand">Brand</label>
                 <input
-                  type="number"
-                  value={item.basePrice ?? 0}
-                  onChange={(e) =>
-                    handleChange(item.id, "basePrice", Number(e.target.value))
-                  }
+                  type="text"
+                  id="brand"
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleInputChange}
+                  placeholder="e.g., ComfortWear"
                 />
               </div>
 
-              <div className="field">
-                <label>Stock</label>
-                <input
-                  type="number"
-                  value={item.stock ?? 0}
-                  onChange={(e) =>
-                    handleChange(item.id, "stock", Number(e.target.value))
-                  }
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="basePrice">Price (€) *</label>
+                  <input
+                    type="number"
+                    id="basePrice"
+                    name="basePrice"
+                    value={formData.basePrice}
+                    onChange={handleInputChange}
+                    placeholder="29.99"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="categoryId">Category *</label>
+                  <select
+                    id="categoryId"
+                    name="categoryId"
+                    value={formData.categoryId}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map(cat => (
+                      <option key={cat.categoryId} value={cat.categoryId}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="description">Description</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Product description..."
+                  rows="4"
                 />
               </div>
 
-              <div className="actions">
+              <div className="form-group checkbox">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  name="isActive"
+                  checked={formData.isActive}
+                  onChange={handleInputChange}
+                />
+                <label htmlFor="isActive">Active (visible to customers)</label>
+              </div>
+
+              <div className="form-actions">
                 <button
-                  className="save-btn"
-                  onClick={() => saveItem(item)}
+                  type="submit"
+                  className="submit-btn"
+                  disabled={loading}
                 >
-                  Save
+                  {loading ? 'Saving...' : editingId ? '✅ Update Product' : '✅ Create Product'}
                 </button>
 
-                <button
-                  className="delete-btn"
-                  onClick={() => removeItem(item.id)}
-                >
-                  Delete
-                </button>
+                {editingId && (
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    onClick={handleCancelEdit}
+                  >
+                    ✕ Cancel
+                  </button>
+                )}
               </div>
-
-            </div>
-          ))
+            </form>
+          </section>
         )}
-      </section>
 
+        {/* PRODUCTS LIST TAB */}
+        {activeTab === 'list' && (
+          <section className="admin-section products-list-section">
+            <h2>All Products</h2>
+
+            {products.length === 0 ? (
+              <p className="no-products">No products yet. Add one to get started!</p>
+            ) : (
+              <div className="products-table-wrapper">
+                <table className="products-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Brand</th>
+                      <th>Category</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map(product => (
+                      <tr key={product.productId}>
+                        <td className="product-name">{product.name}</td>
+                        <td>{product.brand}</td>
+                        <td>
+                          <span className="category-badge">
+                            {getCategoryName(product.categoryId)}
+                          </span>
+                        </td>
+                        <td className="price">€ {Number(product.basePrice).toFixed(2)}</td>
+                        <td>
+                          <button
+                            className={`status-btn ${product.isActive ? 'active' : 'inactive'}`}
+                            onClick={() => toggleProductStatus(product)}
+                            title={product.isActive ? 'Click to deactivate' : 'Click to activate'}
+                          >
+                            {product.isActive ? '✓ Active' : '✗ Inactive'}
+                          </button>
+                        </td>
+                        <td className="actions-cell">
+                          <button
+                            className="edit-btn"
+                            onClick={() => handleEditProduct(product)}
+                            title="Edit product"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            className="delete-btn"
+                            onClick={() => handleDeleteProduct(product.productId)}
+                            title="Delete product"
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+      </main>
+
+      {/* FOOTER */}
+      <footer className="admin-footer">
+        <p>Admin Panel v1.0 | Manage your store inventory</p>
+      </footer>
     </div>
   );
 }
 
-export default AdminPage;
+export default AdminPanel;

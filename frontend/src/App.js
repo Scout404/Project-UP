@@ -1,87 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Login from './Login';
-import AdminPage from './AdminPage';
 import CustomerHome from './CustomerHome';
-import { CartProvider } from "./CartContext";
+import AdminPanel from './AdminPage';
+import { CartProvider } from './CartContext';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
-useEffect(() => {
-  try {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      console.log("[APP DEBUG] Loaded user from localStorage:", parsed);
-      setUser(parsed);
+  useEffect(() => {
+    // If user is already logged in
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        console.log('[APP DEBUG] Loaded user from localStorage:', userData);
+        setUser(userData);
+      } catch (err) {
+        console.error('Failed to parse stored user:', err);
+        localStorage.removeItem('user');
+      }
     }
-  } catch (err) {
-    console.error("Error parsing user:", err);
-    localStorage.removeItem('user');
-  }
-  setLoading(false);
-}, []);
+    setIsLoadingUser(false);
+  }, []);
 
-const handleLoginSuccess = (userData) => {
-  console.log("[APP DEBUG] userData:", userData);
-  console.log("[APP DEBUG] userData.id:", userData?.id);
-  console.log("[APP DEBUG] userData.customer_id:", userData?.customer_id);
-  localStorage.setItem('user', JSON.stringify(userData));
-  setUser(userData);
-};
-
-const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
+  const handleLoginSuccess = (userData) => {
+    console.log('[APP DEBUG] User logged in:', userData);
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  if (loading) {
+  const handleLogout = () => {
+    console.log('[APP DEBUG] User logged out');
+    setUser(null);
+    localStorage.removeItem('user');
+  };
+
+  if (isLoadingUser) {
     return <div>Loading...</div>;
   }
 
-  if (!user) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+  // Admin view (only if logged in AND has Admin role)
+  if (user?.role === 'Admin') {
+    console.log('[APP DEBUG] Rendering AdminPanel');
+    return <AdminPanel user={user} onLogout={handleLogout} />;
   }
 
-  if (user.role === 'Customer') {
-    console.log("[APP DEBUG] About to render CartProvider with user:", user);
-    return (
-      <CartProvider user={user}>
-        <CustomerHome
-          user={user}
-          onLogout={handleLogout}
-        />
-      </CartProvider>
-    );
-  }
-  
-  if (user.role === 'Admin') {
-    return (
-      <AdminPage
-        user={user}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (user.role === 'Customer') {
-    return (
-      <CartProvider user={user}>
-        <CustomerHome
-          user={user}
-          onLogout={handleLogout}
-        />
-      </CartProvider>
-    );
-  }
-
+  // Customer/Guest view (logged in customer OR guest browsing)
+  console.log('[APP DEBUG] Rendering CustomerHome (user:', user ? 'logged-in' : 'guest', ')');
   return (
-    <div className="App">
-      <h1>Unknown role: {user.role}</h1>
-      <button onClick={handleLogout}>Logout</button>
-    </div>
+    <CartProvider user={user}>
+      <CustomerHome user={user} onLogout={handleLogout} onLoginSuccess={handleLoginSuccess} />
+    </CartProvider>
   );
 }
 
