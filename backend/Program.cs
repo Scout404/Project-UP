@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.Logic;
 using backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("Default"))
     )
 );
+
+builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<CartService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -92,187 +96,60 @@ app.MapPost("/login", (AppDbContext db, LoginRequest request) =>
 });
 
 // PRODUCT ENDPOINTS
-app.MapGet("/products", (AppDbContext db) =>
+app.MapGet("/products", async (ProductService service) =>
 {
-    var products = db.Products
-        .Include(p => p.Category)
-        .Select(p => new ProductDto 
-        {
-            ProductId = p.ProductId,
-            Name = p.Name,
-            Description = p.Description,
-            Brand = p.Brand,
-            BasePrice = p.BasePrice,
-            CategoryId = p.CategoryId,
-            CategoryName = p.Category.Name,
-            IsActive = p.IsActive
-        })
-        .ToList();
-    
-    Console.WriteLine($"[GET /products] Returning {products.Count} products");
+    var products = await service.GetAll();
+
     return Results.Ok(products);
 });
 
-app.MapPost("/products", (AppDbContext db, ProductCreateRequest request) =>
+app.MapPost("/products", async (ProductService service, ProductCreateRequest request) =>
 {
-    try
-    {
-        var category = db.Categories.Find(request.CategoryId);
-        if (category == null) return Results.BadRequest(new { error = "Category not found" });
+    var created = await service.Add(request);
 
-        var product = new Product
-        {
-            Name = request.Name ?? "Unnamed Product",
-            Description = request.Description ?? "",
-            Brand = request.Brand ?? "Unknown",
-            BasePrice = request.BasePrice,
-            CategoryId = request.CategoryId,
-            IsActive = request.IsActive
-        };
+    if (created == null)
+        return Results.BadRequest("Invalid category");
 
-        db.Products.Add(product);
-        db.SaveChanges();
-
-        return Results.Ok(new { 
-            productId = product.ProductId, 
-            name = product.Name,
-            message = "Created successfully" 
-        });
-    }
-    catch (Exception ex)
-    {
-        return Results.StatusCode(500);
-    }
+    return Results.Ok(created);
 });
 
-app.MapPut("/products/{id}", (AppDbContext db, int id, ProductUpdateRequest request) =>
+app.MapPut("/products/{id}", async (ProductService service, int id, ProductUpdateRequest request) =>
 {
-    try
-    {
-        var product = db.Products.Find(id);
-        if (product == null)
-            return Results.NotFound();
+    var updated = await service.Update(id, request);
 
-        if (request.Name != null) product.Name = request.Name;
-        if (request.Description != null) product.Description = request.Description;
-        if (request.Brand != null) product.Brand = request.Brand;
-        if (request.BasePrice.HasValue) product.BasePrice = request.BasePrice.Value;
-        if (request.CategoryId.HasValue) product.CategoryId = request.CategoryId.Value;
-        if (request.IsActive.HasValue) product.IsActive = request.IsActive.Value;
+    if (!updated)
+        return Results.NotFound();
 
-        db.SaveChanges();
-        return Results.Ok(product);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[ERROR] Update product: {ex.Message}");
-        return Results.StatusCode(500);
-    }
+    return Results.Ok();
 });
 
-app.MapDelete("/products/{id}", (AppDbContext db, int id) =>
+app.MapDelete("/products/{id}", async (ProductService service, int id) =>
 {
-    try
-    {
-        var product = db.Products.Find(id);
-        if (product == null)
-            return Results.NotFound();
+    var deleted = await service.Delete(id);
 
-        db.Products.Remove(product);
-        db.SaveChanges();
-        return Results.Ok();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[ERROR] Delete product: {ex.Message}");
-        return Results.StatusCode(500);
-    }
+    if (!deleted)
+        return Results.NotFound();
+
+    return Results.Ok();
 });
 
 // CART ENDPOINTS
-app.MapGet("/cart/{userId}", (AppDbContext db, int userId) =>
+app.MapGet("/cart/{userId}", async (
+    CartService service,
+    int userId) =>
 {
-    var cart = db.Carts
-        .Include(c => c.Items)
-        .FirstOrDefault(c => c.UserId == userId);
+    var cart = await service.GetCart(userId);
 
-    if (cart == null)
-    {
-        cart = new Cart 
-        { 
-            UserId = userId, 
-            Items = new List<CartItem>() 
-        };
-        db.Carts.Add(cart);
-        db.SaveChanges();
-    }
-
-    var cartDto = new CartDto
-    {
-        UserId = cart.UserId,
-        Items = cart.Items.Select(i => new CartItemDto
-        {
-            VariantId = i.VariantId,
-            Name = i.Name ?? "Unknown",
-            Price = i.Price,
-            Quantity = i.Quantity
-        }).ToList()
-    };
-
-    return Results.Ok(cartDto);
+    return Results.Ok(cart);
 });
 
-app.MapPost("/cart/add/{userId}", (AppDbContext db, int userId, AddToCartRequest req) =>
+app.MapPost("/cart/add/{userId}", async (CartService service, int userId, AddToCartRequest request) =>
 {
     try
     {
-        var cart = db.Carts.FirstOrDefault(c => c.UserId == userId);
-        
-        if (cart == null)
-        {
-            cart = new Cart { UserId = userId };
-            db.Carts.Add(cart);
-            db.SaveChanges();
-        }
+        var cart = await service.AddToCart(userId, request);
 
-        var existing = db.CartItems
-            .FirstOrDefault(x => x.CartId == cart.Id && x.VariantId == req.VariantId);
-
-        if (existing != null)
-        {
-            existing.Quantity += req.Quantity;
-        }
-        else
-        {
-            db.CartItems.Add(new CartItem
-            {
-                CartId = cart.Id,
-                VariantId = req.VariantId,
-                Name = req.Name ?? "Unknown",
-                Price = req.Price,
-                Quantity = req.Quantity
-            });
-        }
-
-        db.SaveChanges();
-
-        var updatedCart = db.Carts
-            .Include(c => c.Items)
-            .FirstOrDefault(c => c.Id == cart.Id);
-
-        var cartDto = new CartDto
-        {
-            UserId = updatedCart!.UserId,
-            Items = updatedCart.Items.Select(i => new CartItemDto
-            {
-                VariantId = i.VariantId,
-                Name = i.Name ?? "Unknown",
-                Price = i.Price,
-                Quantity = i.Quantity
-            }).ToList()
-        };
-
-        return Results.Ok(cartDto);
+        return Results.Ok(cart);
     }
     catch (Exception ex)
     {
@@ -281,41 +158,16 @@ app.MapPost("/cart/add/{userId}", (AppDbContext db, int userId, AddToCartRequest
     }
 });
 
-app.MapDelete("/cart/remove/{userId}/{variantId}", (AppDbContext db, int userId, int variantId) =>
+app.MapDelete("/cart/remove/{userId}/{variantId}", async ( CartService service, int userId, int variantId) =>
 {
     try
     {
-        var cart = db.Carts
-            .Include(c => c.Items)
-            .FirstOrDefault(c => c.UserId == userId);
+        var cart = await service.RemoveFromCart(userId, variantId);
 
         if (cart == null)
             return Results.NotFound();
 
-        var item = cart.Items.FirstOrDefault(x => x.VariantId == variantId);
-        if (item != null)
-        {
-            db.CartItems.Remove(item);
-            db.SaveChanges();
-        }
-
-        var updatedCart = db.Carts
-            .Include(c => c.Items)
-            .FirstOrDefault(c => c.Id == cart.Id);
-
-        var cartDto = new CartDto
-        {
-            UserId = updatedCart!.UserId,
-            Items = updatedCart.Items.Select(i => new CartItemDto
-            {
-                VariantId = i.VariantId,
-                Name = i.Name ?? "Unknown",
-                Price = i.Price,
-                Quantity = i.Quantity
-            }).ToList()
-        };
-
-        return Results.Ok(cartDto);
+        return Results.Ok(cart);
     }
     catch (Exception ex)
     {
