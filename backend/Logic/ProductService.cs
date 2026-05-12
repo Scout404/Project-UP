@@ -25,8 +25,9 @@ public class ProductService
                 Brand = p.Brand,
                 BasePrice = p.BasePrice,
                 CategoryId = p.CategoryId,
-                CategoryName = p.Category.Name,
-                IsActive = p.IsActive
+                CategoryName = p.Category != null ? p.Category.Name : null,
+                IsActive = p.IsActive,
+                StockQuantity = p.StockQuantity
             })
             .ToListAsync();
     }
@@ -45,18 +46,16 @@ public class ProductService
                 BasePrice = p.BasePrice,
                 CategoryId = p.CategoryId,
                 CategoryName = p.Category.Name,
-                IsActive = p.IsActive
+                IsActive = p.IsActive,
+                StockQuantity = p.StockQuantity
             })
             .FirstOrDefaultAsync();
     }
 
     public async Task<Product?> Add(ProductCreateRequest request)
     {
-        var category = await _context.Categories
-            .FindAsync(request.CategoryId);
-
-        if (category == null)
-            return null;
+        var category = await _context.Categories.FindAsync(request.CategoryId);
+        if (category == null) return null;
 
         var product = new Product
         {
@@ -65,11 +64,11 @@ public class ProductService
             Brand = request.Brand ?? "Unknown",
             BasePrice = request.BasePrice,
             CategoryId = request.CategoryId,
-            IsActive = request.IsActive
+            IsActive = request.IsActive,
+            StockQuantity = request.StockQuantity
         };
 
         _context.Products.Add(product);
-
         await _context.SaveChangesAsync();
 
         return product;
@@ -77,11 +76,8 @@ public class ProductService
 
     public async Task<bool> Update(int id, ProductUpdateRequest request)
     {
-        var product = await _context.Products
-            .FindAsync(id);
-
-        if (product == null)
-            return false;
+        var product = await _context.Products.FindAsync(id);
+        if (product == null) return false;
 
         if (!string.IsNullOrWhiteSpace(request.Name))
             product.Name = request.Name;
@@ -92,37 +88,72 @@ public class ProductService
         if (!string.IsNullOrWhiteSpace(request.Brand))
             product.Brand = request.Brand;
 
-        if (request.BasePrice > 0)
+        if (request.BasePrice.HasValue && request.BasePrice > 0)
             product.BasePrice = (decimal)request.BasePrice;
 
-        product.IsActive = (bool)request.IsActive!;
+        if (request.IsActive.HasValue)
+            product.IsActive = request.IsActive.Value;
 
-        if (request.CategoryId > 0)
+        if (request.CategoryId.HasValue)
         {
-            var categoryExists = await _context.Categories
-                .AnyAsync(c => c.CategoryId == request.CategoryId);
+            var exists = await _context.Categories.AnyAsync(c => c.CategoryId == request.CategoryId);
+            if (!exists) return false;
 
-            if (!categoryExists)
-                return false;
+            product.CategoryId = request.CategoryId.Value;
+        }
 
-            product.CategoryId = (int)request.CategoryId;
+        if (request.StockQuantity.HasValue && request.StockQuantity >= 0)
+        {
+            product.StockQuantity = request.StockQuantity.Value;
         }
 
         await _context.SaveChangesAsync();
-
         return true;
     }
 
     public async Task<bool> Delete(int id)
     {
-        var product = await _context.Products
-            .FindAsync(id);
-
-        if (product == null)
-            return false;
+        var product = await _context.Products.FindAsync(id);
+        if (product == null) return false;
 
         _context.Products.Remove(product);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
+    // =========================
+    // ✅ STOCK MANAGEMENT API
+    // =========================
+
+    public async Task<bool> SetStock(int productId, int quantity)
+    {
+        var product = await _context.Products.FindAsync(productId);
+        if (product == null || quantity < 0) return false;
+
+        product.StockQuantity = quantity;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> AddStock(int productId, int amount)
+    {
+        var product = await _context.Products.FindAsync(productId);
+        if (product == null || amount <= 0) return false;
+
+        product.StockQuantity += amount;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ReduceStock(int productId, int amount)
+    {
+        var product = await _context.Products.FindAsync(productId);
+        if (product == null || amount <= 0) return false;
+
+        if (product.StockQuantity < amount)
+            return false;
+
+        product.StockQuantity -= amount;
         await _context.SaveChangesAsync();
 
         return true;

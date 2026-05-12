@@ -13,7 +13,6 @@ public class Orders
     public DateTime OrderDate { get; set; }
     public decimal TotalPrice { get; set; }
     public OrderStatus Status { get; set; }
-
     public Customer Customer { get; set; } = null!;
     public OrderAddress OrderAddress { get; set; } = null!;
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();

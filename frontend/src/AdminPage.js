@@ -10,7 +10,8 @@ function AdminPanel({ user, onLogout }) {
     brand: '',
     basePrice: '',
     categoryId: '',
-    isActive: true
+    isActive: true,
+    stockQuantity: 0
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -78,7 +79,8 @@ function AdminPanel({ user, onLogout }) {
           brand: formData.brand,
           basePrice: parseFloat(formData.basePrice),
           categoryId: parseInt(formData.categoryId),
-          isActive: formData.isActive
+          isActive: formData.isActive,
+          stockQuantity: formData.stockQuantity
         })
       });
 
@@ -89,7 +91,8 @@ function AdminPanel({ user, onLogout }) {
           brand: '',
           basePrice: '',
           categoryId: '',
-          isActive: true
+          isActive: true,
+          stockQuantity: 0
         });
         setEditingId(null);
         setActiveTab('list');
@@ -111,7 +114,8 @@ function AdminPanel({ user, onLogout }) {
       brand: product.brand,
       basePrice: product.basePrice,
       categoryId: product.categoryId,
-      isActive: product.isActive
+      isActive: product.isActive,
+      stockQuantity: product.stockQuantity
     });
     setEditingId(product.productId);
     setActiveTab('add');
@@ -125,7 +129,8 @@ function AdminPanel({ user, onLogout }) {
       brand: '',
       basePrice: '',
       categoryId: '',
-      isActive: true
+      isActive: true,
+      stockQuantity: 0
     });
     setEditingId(null);
     setMessage('');
@@ -161,7 +166,8 @@ function AdminPanel({ user, onLogout }) {
           brand: product.brand,
           basePrice: product.basePrice,
           categoryId: product.categoryId,
-          isActive: !product.isActive
+          isActive: !product.isActive,
+          stockQuantity: product.stockQuantity
         })
       });
 
@@ -270,6 +276,18 @@ function AdminPanel({ user, onLogout }) {
                 </div>
 
                 <div className="form-group">
+                  <label htmlFor="stockQuantity">Stock Quantity *</label>
+                  <input
+                    type="number"
+                    id="stockQuantity"
+                    name="stockQuantity"
+                    value={formData.stockQuantity}
+                    onChange={handleInputChange}
+                    min="0"
+                  />
+                </div>
+
+                <div className="form-group">
                   <label htmlFor="categoryId">Category *</label>
                   <select
                     id="categoryId"
@@ -350,6 +368,7 @@ function AdminPanel({ user, onLogout }) {
                       <th>Brand</th>
                       <th>Category</th>
                       <th>Price</th>
+                      <th>Stock</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -365,6 +384,11 @@ function AdminPanel({ user, onLogout }) {
                           </span>
                         </td>
                         <td className="price">€ {Number(product.basePrice).toFixed(2)}</td>
+                        <td>
+                          <span className={`stock ${product.stockQuantity === 0 ? 'out' : ''}`}>
+                            {product.stockQuantity}
+                          </span>
+                        </td>
                         <td>
                           <button
                             className={`status-btn ${product.isActive ? 'active' : 'inactive'}`}
