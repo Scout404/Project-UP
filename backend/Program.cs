@@ -48,14 +48,14 @@ using (var scope = app.Services.CreateScope())
             new User 
             { 
                 Username = "admin", 
-                Password = "admin123", 
+                Password = BCrypt.Net.BCrypt.HashPassword("admin123"), 
                 Role = "Admin", 
                 Email = "admin@shop.com" 
             },
             new User 
             { 
                 Username = "testuser", 
-                Password = "test123", 
+                Password = BCrypt.Net.BCrypt.HashPassword("test123"), 
                 Role = "Customer", 
                 Email = "test@shop.com" 
             }
@@ -82,9 +82,9 @@ using (var scope = app.Services.CreateScope())
 app.MapPost("/login", (AppDbContext db, LoginRequest request) =>
 {
     var user = db.Users.FirstOrDefault(u => 
-        u.Username == request.Username && u.Password == request.Password);
+        u.Username == request.Username);
     
-    if (user == null)
+    if (user == null || !IsPasswordValid(request.Password, user.Password))
         return Results.Unauthorized();
     
     return Results.Ok(new 
@@ -92,6 +92,45 @@ app.MapPost("/login", (AppDbContext db, LoginRequest request) =>
         id = user.Id, 
         username = user.Username, 
         role = user.Role 
+    });
+});
+
+// REGISTER ENDPOINT
+app.MapPost("/register", async (AppDbContext db, RegisterRequest request) =>
+{
+    var username = request.Username.Trim();
+    var email = request.Email.Trim();
+
+    if (string.IsNullOrWhiteSpace(username) ||
+        string.IsNullOrWhiteSpace(request.Password) ||
+        string.IsNullOrWhiteSpace(email))
+    {
+        return Results.BadRequest("Username, email and password are required.");
+    }
+
+    var userExists = await db.Users.AnyAsync(u =>
+        u.Username == username || u.Email == email);
+
+    if (userExists)
+        return Results.Conflict("Username or email already exists.");
+
+    var user = new User
+    {
+        Username = username,
+        Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
+        Email = email,
+        Role = "Customer",
+        CreatedAt = DateTime.UtcNow
+    };
+
+    db.Users.Add(user);
+    await db.SaveChangesAsync();
+
+    return Results.Created($"/users/{user.Id}", new
+    {
+        id = user.Id,
+        username = user.Username,
+        role = user.Role
     });
 });
 
@@ -235,3 +274,11 @@ app.MapGet("/debug/products-full", (AppDbContext db) =>
 });
 
 app.Run();
+
+static bool IsPasswordValid(string password, string savedPassword)
+{
+    if (savedPassword.StartsWith("$2"))
+        return BCrypt.Net.BCrypt.Verify(password, savedPassword);
+
+    return savedPassword == password;
+}
