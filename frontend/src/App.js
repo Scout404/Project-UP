@@ -1,59 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Login from './Login';
-import AdminPage from './AdminPage';
 import CustomerHome from './CustomerHome';
+import AdminPanel from './AdminPage';
+import { CartProvider } from './CartContext';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setIsLoggedIn(true);
+    // If user is already logged in
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        console.log('[APP DEBUG] Loaded user from localStorage:', userData);
+        setUser(userData);
+      } catch (err) {
+        console.error('Failed to parse stored user:', err);
+        localStorage.removeItem('user');
+      }
     }
+    setIsLoadingUser(false);
   }, []);
 
   const handleLoginSuccess = (userData) => {
+    console.log('[APP DEBUG] User logged in:', userData);
     setUser(userData);
-    setIsLoggedIn(true);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    console.log('[APP DEBUG] User logged out');
     setUser(null);
-    setIsLoggedIn(false);
+    localStorage.removeItem('user');
   };
 
-  if (!isLoggedIn) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+  if (isLoadingUser) {
+    return <div>Loading...</div>;
   }
 
-  // Route based on user role
-  if (user.role === 'Admin') {
-    return <AdminPage user={user} onLogout={handleLogout} />;
-  } else if (user.role === 'Customer') {
-    return <CustomerHome user={user} onLogout={handleLogout} />;
+  // Admin view (only if logged in AND has Admin role)
+  if (user?.role === 'Admin') {
+    console.log('[APP DEBUG] Rendering AdminPanel');
+    return <AdminPanel user={user} onLogout={handleLogout} />;
   }
 
-  // Fallback (shouldn't happen)
+  // Customer/Guest view (logged in customer OR guest browsing)
+  console.log('[APP DEBUG] Rendering CustomerHome (user:', user ? 'logged-in' : 'guest', ')');
   return (
-    <div className="App">
-      <header className="App-header">
-        <div className="navbar">
-          <h1>Welcome, {user.username}!</h1>
-          <button onClick={handleLogout} className="logout-btn">
-            Logout
-          </button>
-        </div>
-      </header>
-      <main>
-        <p>Unknown user role.</p>
-      </main>
-    </div>
+    <CartProvider user={user}>
+      <CustomerHome user={user} onLogout={handleLogout} onLoginSuccess={handleLoginSuccess} />
+    </CartProvider>
   );
 }
 

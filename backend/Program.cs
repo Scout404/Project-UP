@@ -1,69 +1,229 @@
-using backend.Models;
+using backend.Data;
 using backend.Logic;
+using backend.Models;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("Default"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("Default"))
+    )
+);
+
+builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<CartService>();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+            .AllowAnyMethod()
+            .AllowAnyHeader();
     });
 });
 
-builder.Services.AddOpenApi();
-
 var app = builder.Build();
-
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 
-// Health check endpoint
-app.MapGet("/health", () =>
+// Database migration and seeding
+using (var scope = app.Services.CreateScope())
 {
-    return Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
-})
-.WithName("HealthCheck");
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
 
-// Login endpoint
-app.MapPost("/login", (LoginRequest request) =>
-{
-    if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+    if (!db.Users.Any())
     {
-        return Results.BadRequest(new { message = "Username and password are required." });
+        db.Users.AddRange(
+            new User 
+            { 
+                Username = "admin", 
+                Password = "admin123", 
+                Role = "Admin", 
+                Email = "admin@shop.com" 
+            },
+            new User 
+            { 
+                Username = "testuser", 
+                Password = "test123", 
+                Role = "Customer", 
+                Email = "test@shop.com" 
+            }
+        );
+        db.SaveChanges();
     }
 
-    AuthenticationService authService = new AuthenticationService();
-    var user = authService.Authenticate(request.Username, request.Password);
-
-    if (user != null)
+    // Default categories
+    if (!db.Categories.Any())
     {
-        return Results.Ok(new { success = true, message = "Login successful!", role = user.Role, username = user.Username });
+        Console.WriteLine("[SEED] Creating categories...");
+        db.Categories.AddRange(
+            new Category { Name = "home" },
+            new Category { Name = "clothes" },
+            new Category { Name = "accessoires" },
+            new Category { Name = "collections" }
+        );
+        db.SaveChanges();
+        Console.WriteLine("[SEED] Categories created successfully");
     }
-    else
-    {
+}
+
+// LOGIN ENDPOINT
+app.MapPost("/login", (AppDbContext db, LoginRequest request) =>
+{
+    var user = db.Users.FirstOrDefault(u => 
+        u.Username == request.Username && u.Password == request.Password);
+    
+    if (user == null)
         return Results.Unauthorized();
-    }
-})
-.WithName("Login")
-.Produces(StatusCodes.Status200OK)
-.Produces(StatusCodes.Status401Unauthorized)
-.Produces(StatusCodes.Status400BadRequest);
+    
+    return Results.Ok(new 
+    { 
+        id = user.Id, 
+        username = user.Username, 
+        role = user.Role 
+    });
+});
 
-app.MapGet("/searchFunc", (string? searchedProduct,int? categoryId,string? brand,decimal? minPrice,decimal? maxPrice,int? colorId,int? sizeId) =>
+// PRODUCT ENDPOINTS
+app.MapGet("/products", async (ProductService service) =>
+{
+    var products = await service.GetAll();
+
+    return Results.Ok(products);
+});
+
+app.MapPost("/products", async (ProductService service, ProductCreateRequest request) =>
+{
+    var created = await service.Add(request);
+
+    if (created == null)
+        return Results.BadRequest("Invalid category");
+
+    return Results.Ok(created);
+});
+
+app.MapPut("/products/{id}", async (ProductService service, int id, ProductUpdateRequest request) =>
+{
+    var updated = await service.Update(id, request);
+
+    if (!updated)
+        return Results.NotFound();
+
+    return Results.Ok();
+});
+
+app.MapDelete("/products/{id}", async (ProductService service, int id) =>
+{
+    var deleted = await service.Delete(id);
+
+    if (!deleted)
+        return Results.NotFound();
+
+    return Results.Ok();
+});
+
+// CART ENDPOINTS
+app.MapGet("/cart/{userId}", async (
+    CartService service,
+    int userId) =>
+{
+    var cart = await service.GetCart(userId);
+
+    return Results.Ok(cart);
+});
+
+app.MapPost("/cart/add/{userId}", async (CartService service, int userId, AddToCartRequest request) =>
+{
+    try
+    {
+        var cart = await service.AddToCart(userId, request);
+
+        return Results.Ok(cart);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[ERROR] Add to cart: {ex.Message}");
+        return Results.StatusCode(500);
+    }
+});
+
+app.MapDelete("/cart/remove/{userId}/{variantId}", async ( CartService service, int userId, int variantId) =>
+{
+    try
+    {
+        var cart = await service.RemoveFromCart(userId, variantId);
+
+        if (cart == null)
+            return Results.NotFound();
+
+        return Results.Ok(cart);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[ERROR] Remove from cart: {ex.Message}");
+        return Results.StatusCode(500);
+    }
+});
+
+// SEARCH FUNCTION
+app.MapGet("/searchFunc", (string? searchedProduct, int? categoryId, string? brand, 
+    decimal? minPrice, decimal? maxPrice, int? colorId, int? sizeId) =>
 {
     var search = new SearchFunction();
+    return search.Search(searchedProduct, categoryId, brand, minPrice, maxPrice, colorId, sizeId);
+});
 
-    return search.Search(searchedProduct,categoryId,brand, minPrice,maxPrice,colorId,sizeId);
+// DEBUG ENDPOINTS
+app.MapGet("/debug/table-counts", (AppDbContext db) =>
+{
+    var counts = new 
+    { 
+        usersCount = db.Users.Count(),
+        categoriesCount = db.Categories.Count(),
+        productsCount = db.Products.Count(),
+        cartsCount = db.Carts.Count(),
+        cartItemsCount = db.CartItems.Count()
+    };
+    Console.WriteLine($"[DEBUG] Table counts: {System.Text.Json.JsonSerializer.Serialize(counts)}");
+    return Results.Ok(counts);
+});
+
+app.MapGet("/debug/categories", (AppDbContext db) =>
+{
+    var categories = db.Categories
+        .Select(c => new { c.CategoryId, c.Name })
+        .ToList();
+    Console.WriteLine($"[DEBUG] Categories: {System.Text.Json.JsonSerializer.Serialize(categories)}");
+    return Results.Ok(new { totalCategories = categories.Count, categories });
+});
+
+app.MapGet("/debug/products-full", (AppDbContext db) =>
+{
+    var products = db.Products
+        .Include(p => p.Category)
+        .Select(p => new 
+        { 
+            p.ProductId, 
+            p.Name, 
+            p.Brand, 
+            p.BasePrice,
+            CategoryId = p.CategoryId,
+            CategoryName = p.Category.Name
+        })
+        .ToList();
+    Console.WriteLine($"[DEBUG] Products: {System.Text.Json.JsonSerializer.Serialize(products)}");
+    return Results.Ok(new { totalProducts = products.Count, products });
 });
 
 app.Run();

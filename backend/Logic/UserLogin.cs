@@ -1,6 +1,7 @@
 using backend.Models;
 using System.Text.Json;
 
+namespace backend.Logic;
 public class AuthenticationService
 {
     private readonly string _usersJsonPath = Path.Combine(AppContext.BaseDirectory, "Data", "users.json");
