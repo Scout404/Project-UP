@@ -208,13 +208,13 @@ function AdminPanel({ user, onLogout }) {
               handleCancelEdit();
             }}
           >
-            {editingId ? '✏️ Edit Product' : '➕ Add Product'}
+            {editingId ? 'Edit Product' : '+ Add Product'}
           </button>
           <button
             className={`tab-btn ${activeTab === 'list' ? 'active' : ''}`}
             onClick={() => setActiveTab('list')}
           >
-            📋 Products ({products.length})
+            Products ({products.length})
           </button>
         </div>
       </header>
