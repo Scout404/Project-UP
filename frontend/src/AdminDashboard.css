@@ -233,30 +233,39 @@
   letter-spacing: normal;
 }
 
-/* FORM ACTIONS */
 .form-actions {
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
+  width: 100%;
 }
 
 .submit-btn,
 .cancel-btn {
-  border: none;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 44px;
+  padding: 0 1rem;         /* remove vertical padding to avoid distortion */
+
   border-radius: 999px;
-  padding: 0.75rem 2rem;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  flex: 1;
+
   text-transform: lowercase;
   letter-spacing: 0.05em;
+  line-height: 1;
 }
 
+/* PRIMARY */
 .submit-btn {
   background: #111827;
   color: white;
+  border: none;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -269,6 +278,7 @@
   cursor: not-allowed;
 }
 
+/* SECONDARY */
 .cancel-btn {
   background: #f3f4f6;
   color: #111827;

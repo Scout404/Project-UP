@@ -58,7 +58,7 @@ function AdminPanel({ user, onLogout }) {
     setMessage('');
 
     if (!formData.name || !formData.categoryId || !formData.basePrice) {
-      setMessage('❌ Please fill in all required fields');
+      setMessage('Please fill in all required fields');
       setLoading(false);
       return;
     }
@@ -98,10 +98,10 @@ function AdminPanel({ user, onLogout }) {
         setActiveTab('list');
         fetchProducts(); // Refresh product list
       } else {
-        setMessage('❌ Failed to save product');
+        setMessage('Failed to save product');
       }
     } catch (err) {
-      setMessage('❌ Error: ' + err.message);
+      setMessage('Error: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -144,13 +144,13 @@ function AdminPanel({ user, onLogout }) {
         });
 
         if (response.ok) {
-          setMessage('✅ Product deleted successfully!');
+          setMessage('Product deleted successfully!');
           fetchProducts();
         } else {
-          setMessage('❌ Failed to delete product');
+          setMessage('Failed to delete product');
         }
       } catch (err) {
-        setMessage('❌ Error: ' + err.message);
+        setMessage('Error: ' + err.message);
       }
     }
   };
@@ -173,13 +173,13 @@ function AdminPanel({ user, onLogout }) {
 
       if (response.ok) {
         const newStatus = !product.isActive ? 'Active' : 'Inactive';
-        setMessage(`✅ Product "${product.name}" is now ${newStatus}!`);
+        setMessage(`Product "${product.name}" is now ${newStatus}!`);
         fetchProducts();
       } else {
-        setMessage('❌ Failed to update product status');
+        setMessage('Failed to update product status');
       }
     } catch (err) {
-      setMessage('❌ Error: ' + err.message);
+      setMessage('Error: ' + err.message);
     }
   };
 
@@ -221,7 +221,7 @@ function AdminPanel({ user, onLogout }) {
 
       {/* MESSAGE */}
       {message && (
-        <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
+        <div className={`message ${message.includes('✔') ? 'success' : 'error'}`}>
           {message}
         </div>
       )}
@@ -297,7 +297,9 @@ function AdminPanel({ user, onLogout }) {
                     required
                   >
                     <option value="">Select a category</option>
-                    {categories.map(cat => (
+                    {categories
+                      .filter(cat => cat.name.toLowerCase() !== 'home')
+                      .map(cat => (
                       <option key={cat.categoryId} value={cat.categoryId}>
                         {cat.name}
                       </option>
@@ -335,7 +337,7 @@ function AdminPanel({ user, onLogout }) {
                   className="submit-btn"
                   disabled={loading}
                 >
-                  {loading ? 'Saving...' : editingId ? '✅ Update Product' : '✅ Create Product'}
+                  {loading ? 'Saving...' : editingId ? '✔ Update Product' : '✔ Create Product'}
                 </button>
 
                 {editingId && (
