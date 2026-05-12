@@ -149,7 +149,17 @@ app.MapPost("/products", async (ProductService service, ProductCreateRequest req
     if (created == null)
         return Results.BadRequest("Invalid category");
 
-    return Results.Ok(created);
+    return Results.Ok(new ProductDto
+    {
+        ProductId = created.ProductId,
+        Name = created.Name,
+        Description = created.Description,
+        Brand = created.Brand,
+        BasePrice = created.BasePrice,
+        CategoryId = created.CategoryId,
+        IsActive = created.IsActive,
+        StockQuantity = created.StockQuantity
+    });
 });
 
 app.MapPut("/products/{id}", async (ProductService service, int id, ProductUpdateRequest request) =>
@@ -173,9 +183,7 @@ app.MapDelete("/products/{id}", async (ProductService service, int id) =>
 });
 
 // CART ENDPOINTS
-app.MapGet("/cart/{userId}", async (
-    CartService service,
-    int userId) =>
+app.MapGet("/cart/{userId}", async (CartService service, int userId) =>
 {
     var cart = await service.GetCart(userId);
 
