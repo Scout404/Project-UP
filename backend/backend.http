@@ -12,7 +12,19 @@ Content-Type: application/json
 
 {
   "username": "testuser",
-  "password": "testpass"
+  "password": "test123"
+}
+
+###
+
+### Register new customer
+POST {{backend_HostAddress}}/register
+Content-Type: application/json
+
+{
+  "username": "newcustomer",
+  "email": "newcustomer@shop.com",
+  "password": "newpass123"
 }
 
 ###
