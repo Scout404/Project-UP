@@ -10,7 +10,8 @@ function AdminPanel({ user, onLogout }) {
     brand: '',
     basePrice: '',
     categoryId: '',
-    isActive: true
+    isActive: true,
+    stockQuantity: 0
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -57,7 +58,7 @@ function AdminPanel({ user, onLogout }) {
     setMessage('');
 
     if (!formData.name || !formData.categoryId || !formData.basePrice) {
-      setMessage('❌ Please fill in all required fields');
+      setMessage('Please fill in all required fields');
       setLoading(false);
       return;
     }
@@ -78,7 +79,8 @@ function AdminPanel({ user, onLogout }) {
           brand: formData.brand,
           basePrice: parseFloat(formData.basePrice),
           categoryId: parseInt(formData.categoryId),
-          isActive: formData.isActive
+          isActive: formData.isActive,
+          stockQuantity: formData.stockQuantity
         })
       });
 
@@ -89,16 +91,17 @@ function AdminPanel({ user, onLogout }) {
           brand: '',
           basePrice: '',
           categoryId: '',
-          isActive: true
+          isActive: true,
+          stockQuantity: 0
         });
         setEditingId(null);
         setActiveTab('list');
         fetchProducts(); // Refresh product list
       } else {
-        setMessage('❌ Failed to save product');
+        setMessage('Failed to save product');
       }
     } catch (err) {
-      setMessage('❌ Error: ' + err.message);
+      setMessage('Error: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -111,7 +114,8 @@ function AdminPanel({ user, onLogout }) {
       brand: product.brand,
       basePrice: product.basePrice,
       categoryId: product.categoryId,
-      isActive: product.isActive
+      isActive: product.isActive,
+      stockQuantity: product.stockQuantity
     });
     setEditingId(product.productId);
     setActiveTab('add');
@@ -125,7 +129,8 @@ function AdminPanel({ user, onLogout }) {
       brand: '',
       basePrice: '',
       categoryId: '',
-      isActive: true
+      isActive: true,
+      stockQuantity: 0
     });
     setEditingId(null);
     setMessage('');
@@ -139,13 +144,13 @@ function AdminPanel({ user, onLogout }) {
         });
 
         if (response.ok) {
-          setMessage('✅ Product deleted successfully!');
+          setMessage('Product deleted successfully!');
           fetchProducts();
         } else {
-          setMessage('❌ Failed to delete product');
+          setMessage('Failed to delete product');
         }
       } catch (err) {
-        setMessage('❌ Error: ' + err.message);
+        setMessage('Error: ' + err.message);
       }
     }
   };
@@ -161,19 +166,20 @@ function AdminPanel({ user, onLogout }) {
           brand: product.brand,
           basePrice: product.basePrice,
           categoryId: product.categoryId,
-          isActive: !product.isActive
+          isActive: !product.isActive,
+          stockQuantity: product.stockQuantity
         })
       });
 
       if (response.ok) {
         const newStatus = !product.isActive ? 'Active' : 'Inactive';
-        setMessage(`✅ Product "${product.name}" is now ${newStatus}!`);
+        setMessage(`Product "${product.name}" is now ${newStatus}!`);
         fetchProducts();
       } else {
-        setMessage('❌ Failed to update product status');
+        setMessage('Failed to update product status');
       }
     } catch (err) {
-      setMessage('❌ Error: ' + err.message);
+      setMessage('Error: ' + err.message);
     }
   };
 
@@ -202,20 +208,20 @@ function AdminPanel({ user, onLogout }) {
               handleCancelEdit();
             }}
           >
-            {editingId ? '✏️ Edit Product' : '➕ Add Product'}
+            {editingId ? 'Edit Product' : '+ Add Product'}
           </button>
           <button
             className={`tab-btn ${activeTab === 'list' ? 'active' : ''}`}
             onClick={() => setActiveTab('list')}
           >
-            📋 Products ({products.length})
+            Products ({products.length})
           </button>
         </div>
       </header>
 
       {/* MESSAGE */}
       {message && (
-        <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
+        <div className={`message ${message.includes('✔') ? 'success' : 'error'}`}>
           {message}
         </div>
       )}
@@ -270,6 +276,18 @@ function AdminPanel({ user, onLogout }) {
                 </div>
 
                 <div className="form-group">
+                  <label htmlFor="stockQuantity">Stock Quantity *</label>
+                  <input
+                    type="number"
+                    id="stockQuantity"
+                    name="stockQuantity"
+                    value={formData.stockQuantity}
+                    onChange={handleInputChange}
+                    min="0"
+                  />
+                </div>
+
+                <div className="form-group">
                   <label htmlFor="categoryId">Category *</label>
                   <select
                     id="categoryId"
@@ -279,7 +297,9 @@ function AdminPanel({ user, onLogout }) {
                     required
                   >
                     <option value="">Select a category</option>
-                    {categories.map(cat => (
+                    {categories
+                      .filter(cat => cat.name.toLowerCase() !== 'home')
+                      .map(cat => (
                       <option key={cat.categoryId} value={cat.categoryId}>
                         {cat.name}
                       </option>
@@ -317,7 +337,7 @@ function AdminPanel({ user, onLogout }) {
                   className="submit-btn"
                   disabled={loading}
                 >
-                  {loading ? 'Saving...' : editingId ? '✅ Update Product' : '✅ Create Product'}
+                  {loading ? 'Saving...' : editingId ? '✔ Update Product' : '✔ Create Product'}
                 </button>
 
                 {editingId && (
@@ -350,6 +370,7 @@ function AdminPanel({ user, onLogout }) {
                       <th>Brand</th>
                       <th>Category</th>
                       <th>Price</th>
+                      <th>Stock</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -365,6 +386,11 @@ function AdminPanel({ user, onLogout }) {
                           </span>
                         </td>
                         <td className="price">€ {Number(product.basePrice).toFixed(2)}</td>
+                        <td>
+                          <span className={`stock ${product.stockQuantity === 0 ? 'out' : ''}`}>
+                            {product.stockQuantity}
+                          </span>
+                        </td>
                         <td>
                           <button
                             className={`status-btn ${product.isActive ? 'active' : 'inactive'}`}

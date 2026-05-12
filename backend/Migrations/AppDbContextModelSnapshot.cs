@@ -179,7 +179,7 @@ namespace backend.Migrations
 
                     b.HasKey("OrderId");
 
-                    b.ToTable("OrderAddress");
+                    b.ToTable("OrderAddresses");
                 });
 
             modelBuilder.Entity("OrderItem", b =>
@@ -274,6 +274,9 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<int>("StockQuantity")
+                        .HasColumnType("int");
+
                     b.HasKey("ProductId");
 
                     b.HasIndex("CategoryId");
@@ -311,6 +314,9 @@ namespace backend.Migrations
                     b.Property<int>("SizeId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("SizeId1")
+                        .HasColumnType("int");
+
                     b.Property<int>("Stock")
                         .HasColumnType("int");
 
@@ -323,6 +329,8 @@ namespace backend.Migrations
                     b.HasIndex("ProductId");
 
                     b.HasIndex("SizeId");
+
+                    b.HasIndex("SizeId1");
 
                     b.ToTable("ProductVariants");
                 });
@@ -514,7 +522,7 @@ namespace backend.Migrations
                     b.HasOne("ProductVariant", "Variant")
                         .WithMany("OrderItems")
                         .HasForeignKey("VariantId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Order");
@@ -552,12 +560,6 @@ namespace backend.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Size", "Size")
-                        .WithMany()
-                        .HasForeignKey("ColorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("Color", null)
                         .WithMany("Variants")
                         .HasForeignKey("ColorId1");
@@ -568,11 +570,15 @@ namespace backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Size", "Size")
+                        .WithMany()
+                        .HasForeignKey("SizeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Size", null)
                         .WithMany("Variants")
-                        .HasForeignKey("SizeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("SizeId1");
 
                     b.Navigation("Color");
 

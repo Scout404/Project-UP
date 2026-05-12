@@ -5,11 +5,11 @@ namespace backend.Data;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    public AppDbContext(DbContextOptions<AppDbContext> options)
+        : base(options)
     {
     }
 
-    // REQUIRED DbSets
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Category> Categories { get; set; } = null!;
     public DbSet<Product> Products { get; set; } = null!;
@@ -22,16 +22,39 @@ public class AppDbContext : DbContext
     public DbSet<OrderItem> OrderItems { get; set; } = null!;
     public DbSet<Orders> Orders { get; set; } = null!;
     public DbSet<WishlistItem> WishlistItems { get; set; } = null!;
+    public DbSet<OrderAddress> OrderAddresses { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+        modelBuilder.Entity<ProductVariant>(entity =>
+        {
+            entity.HasKey(v => v.ProductVariantId);
+
+            entity.HasOne(v => v.Product)
+                .WithMany(p => p.Variants)
+                .HasForeignKey(v => v.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(v => v.Size)
+                .WithMany()
+                .HasForeignKey(v => v.SizeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(v => v.Color)
+                .WithMany()
+                .HasForeignKey(v => v.ColorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(v => v.PictureUrl).IsRequired();
+        });
 
         modelBuilder.Entity<Orders>()
-        .HasKey(o => o.OrderId);
+            .HasKey(o => o.OrderId);
 
         modelBuilder.Entity<OrderAddress>()
-        .HasKey(a => a.OrderId);
+            .HasKey(a => a.OrderId);
 
         modelBuilder.Entity<Orders>()
             .HasOne(o => o.OrderAddress)
@@ -57,47 +80,16 @@ public class AppDbContext : DbContext
             .HasForeignKey(r => r.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<ProductVariant>()
-            .HasOne(v => v.Size)
-            .WithMany()
-            .HasForeignKey(v => v.SizeId)
-            .HasForeignKey(v => v.ColorId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<ProductVariant>()
-            .HasOne(v => v.Color)
-            .WithMany()
-            .HasForeignKey(v => v.ColorId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<ProductVariant>()
-            .HasMany(v => v.OrderItems)
-            .WithOne(oi => oi.Variant)
-            .HasForeignKey(oi => oi.VariantId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         modelBuilder.Entity<OrderItem>()
             .HasOne(oi => oi.Order)
             .WithMany()
             .HasForeignKey(oi => oi.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<ProductVariant>()
-            .HasMany(v => v.WishlistItems)
-            .WithOne(w => w.ProductVariant)
-            .HasForeignKey(w => w.ProductVariantId)
-            .OnDelete(DeleteBehavior.Cascade);
-
         modelBuilder.Entity<Cart>()
             .HasMany(c => c.Items)
             .WithOne(ci => ci.Cart)
             .HasForeignKey(ci => ci.CartId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Review>()
-            .HasOne(r => r.Product)
-            .WithMany(p => p.Reviews)
-            .HasForeignKey(r => r.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Product>()
