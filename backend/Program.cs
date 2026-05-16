@@ -12,6 +12,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+builder.Services.AddScoped<ProductRepository>();
+builder.Services.AddScoped<CartRepository>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CartService>();
 
@@ -142,24 +144,16 @@ app.MapGet("/products", async (ProductService service) =>
     return Results.Ok(products);
 });
 
-app.MapPost("/products", async (ProductService service, ProductCreateRequest request) =>
+app.MapPost("/products", async (
+    ProductService service,
+    ProductCreateRequest request) =>
 {
     var created = await service.Add(request);
 
     if (created == null)
         return Results.BadRequest("Invalid category");
 
-    return Results.Ok(new ProductDto
-    {
-        ProductId = created.ProductId,
-        Name = created.Name,
-        Description = created.Description,
-        Brand = created.Brand,
-        BasePrice = created.BasePrice,
-        CategoryId = created.CategoryId,
-        IsActive = created.IsActive,
-        StockQuantity = created.StockQuantity
-    });
+    return Results.Ok(created);
 });
 
 app.MapPut("/products/{id}", async (ProductService service, int id, ProductUpdateRequest request) =>
@@ -185,9 +179,17 @@ app.MapDelete("/products/{id}", async (ProductService service, int id) =>
 // CART ENDPOINTS
 app.MapGet("/cart/{userId}", async (CartService service, int userId) =>
 {
-    var cart = await service.GetCart(userId);
-
-    return Results.Ok(cart);
+    try
+    {
+        var cart = await service.GetCart(userId);
+        return Results.Ok(cart);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[ERROR] Get cart: {ex.Message}");
+        Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
+        return Results.StatusCode(500);
+    }
 });
 
 app.MapPost("/cart/add/{userId}", async (CartService service, int userId, AddToCartRequest request) =>
