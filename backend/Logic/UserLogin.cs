@@ -1,34 +1,36 @@
+using backend.Data;
 using backend.Models;
-using System.Text.Json;
 
 namespace backend.Logic;
+
 public class AuthenticationService
 {
-    private readonly string _usersJsonPath = Path.Combine(AppContext.BaseDirectory, "Data", "users.json");
+    private readonly UserRepository _users;
 
-    public User? Authenticate(string username, string password)
+    public AuthenticationService(UserRepository users)
     {
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            return null;
+        _users = users;
+    }
 
-        try
+    public async Task<User?> Authenticate(string username, string password)
+    {
+        if (string.IsNullOrWhiteSpace(username) ||
+            string.IsNullOrWhiteSpace(password))
         {
-            if (!File.Exists(_usersJsonPath))
-                return null;
-
-            string jsonContent = File.ReadAllText(_usersJsonPath);
-            var users = JsonSerializer.Deserialize<List<User>>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            if (users == null)
-                return null;
-
-            var user = users.FirstOrDefault(u => u.Username == username && u.Password == password);
-            return user;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error during authentication: {ex.Message}");
             return null;
         }
+
+        var user = await _users.GetByUsername(username);
+
+        if (user == null)
+            return null;
+
+        bool validPassword =
+            BCrypt.Net.BCrypt.Verify(password, user.Password);
+
+        if (!validPassword)
+            return null;
+
+        return user;
     }
 }

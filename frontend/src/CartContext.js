@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 const CartContext = createContext();
 
@@ -6,19 +6,21 @@ export function CartProvider({ children, user }) {
   const [cart, setCart] = useState({ items: [] });
   
   const userId = user?.id ? Number(user.id) : (user?.customer_id ? Number(user.customer_id) : null);
+  const currentUserIdRef = useRef(userId);
+  currentUserIdRef.current = userId;
   
   console.log("[CART DEBUG] User:", user);
   console.log("[CART DEBUG] Extracted userId:", userId);
 
-  const fetchCart = async () => {
-    if (!userId) {
+  const fetchCart = useCallback(async (cartUserId) => {
+    if (!cartUserId) {
       console.warn("[CART DEBUG] Cannot fetch cart - userId is null");
       return;
     }
 
-    console.log(`[CART DEBUG] Fetching cart for userId: ${userId}`);
+    console.log(`[CART DEBUG] Fetching cart for userId: ${cartUserId}`);
     try {
-      const res = await fetch(`http://localhost:5050/cart/${userId}`);
+      const res = await fetch(`http://localhost:5050/cart/${cartUserId}`);
       if (!res.ok) {
         console.error(`[CART DEBUG] Fetch failed with status ${res.status}`);
         return;
@@ -26,16 +28,22 @@ export function CartProvider({ children, user }) {
       
       const data = await res.json();
       console.log("[CART DEBUG] Cart fetched:", data);
-      setCart(data);
+      if (currentUserIdRef.current === cartUserId) {
+        setCart(data);
+      }
     } catch (err) {
       console.error("[CART DEBUG] Cart fetch error:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     console.log("[CART DEBUG] useEffect: userId changed to", userId);
-    fetchCart();
-  }, [userId]);
+    setCart({ items: [] });
+
+    if (userId) {
+      fetchCart(userId);
+    }
+  }, [fetchCart, userId]);
 
   const addToCart = async (product) => {
     console.log("[CART DEBUG] addToCart called with:", product);
@@ -70,7 +78,7 @@ export function CartProvider({ children, user }) {
       const data = await res.json();
       console.log("[CART DEBUG] POST response:", data);
       
-      await fetchCart();
+      await fetchCart(userId);
     } catch (err) {
       console.error("[CART DEBUG] addToCart error:", err);
     }
@@ -91,7 +99,7 @@ export function CartProvider({ children, user }) {
         return;
       }
 
-      await fetchCart();
+      await fetchCart(userId);
     } catch (err) {
       console.error("[CART DEBUG] removeFromCart error:", err);
     }
