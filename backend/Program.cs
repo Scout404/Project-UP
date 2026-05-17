@@ -12,6 +12,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<CartRepository>();
 builder.Services.AddScoped<ProductService>();
@@ -81,59 +83,49 @@ using (var scope = app.Services.CreateScope())
 }
 
 // LOGIN ENDPOINT
-app.MapPost("/login", (AppDbContext db, LoginRequest request) =>
+app.MapPost("/login",
+    async (
+        AuthenticationService auth,
+        LoginRequest request
+    ) =>
 {
-    var user = db.Users.FirstOrDefault(u => 
-        u.Username == request.Username);
-    
-    if (user == null || !IsPasswordValid(request.Password, user.Password))
-        return Results.Unauthorized();
-    
-    return Results.Ok(new 
-    { 
-        id = user.Id, 
-        username = user.Username, 
-        role = user.Role 
-    });
-});
+    var user = await auth.Authenticate(
+        request.Username,
+        request.Password
+    );
 
-// REGISTER ENDPOINT
-app.MapPost("/register", async (AppDbContext db, RegisterRequest request) =>
-{
-    var username = request.Username.Trim();
-    var email = request.Email.Trim();
-
-    if (string.IsNullOrWhiteSpace(username) ||
-        string.IsNullOrWhiteSpace(request.Password) ||
-        string.IsNullOrWhiteSpace(email))
+    if (user == null)
     {
-        return Results.BadRequest("Username, email and password are required.");
+        return Results.Unauthorized();
     }
 
-    var userExists = await db.Users.AnyAsync(u =>
-        u.Username == username || u.Email == email);
-
-    if (userExists)
-        return Results.Conflict("Username or email already exists.");
-
-    var user = new User
-    {
-        Username = username,
-        Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
-        Email = email,
-        Role = "Customer",
-        CreatedAt = DateTime.UtcNow
-    };
-
-    db.Users.Add(user);
-    await db.SaveChangesAsync();
-
-    return Results.Created($"/users/{user.Id}", new
+    return Results.Ok(new
     {
         id = user.Id,
         username = user.Username,
         role = user.Role
     });
+});
+
+// REGISTER ENDPOINT
+app.MapPost("/register",
+    async (
+        AuthenticationService auth,
+        RegisterRequest request
+    ) =>
+{
+    var result = await auth.Register(
+        request.Username.Trim(),
+        request.Email.Trim(),
+        request.Password
+    );
+
+    if (!result.Success)
+    {
+        return Results.Conflict(result.Error);
+    }
+
+    return Results.Ok();
 });
 
 // PRODUCT ENDPOINTS
