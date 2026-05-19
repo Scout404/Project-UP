@@ -1,0 +1,11 @@
+{
+  "name": "project-up",
+  "private": true,
+  "scripts": {
+    "dev": "powershell -ExecutionPolicy Bypass -File scripts/dev.ps1",
+    "dev:backend": "dotnet run --project backend/backend.csproj --launch-profile http",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "start": "npm --prefix frontend start",
+    "build": "npm --prefix frontend run build"
+  }
+}

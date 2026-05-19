@@ -1,16 +1,10 @@
 using backend.Data;
 using backend.Logic;
 using backend.Models;
-using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("Default"),
-        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("Default"))
-    )
-);
 
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthenticationService>();
@@ -40,44 +34,59 @@ var app = builder.Build();
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 
-// Database migration and seeding
+// Database schema and seeding
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    var connectionString = app.Configuration.GetConnectionString("Default")
+        ?? throw new InvalidOperationException("Missing Default connection string.");
 
-    if (!db.Users.Any())
+    await ExecuteSchemaSqlIfDatabaseIsEmpty(connectionString);
+
+    if (!await AnyRows(connectionString, "Users"))
     {
-        db.Users.AddRange(
-            new User 
-            { 
-                Username = "admin", 
-                Password = BCrypt.Net.BCrypt.HashPassword("admin123"), 
-                Role = "Admin", 
-                Email = "admin@shop.com" 
-            },
-            new User 
-            { 
-                Username = "testuser", 
-                Password = BCrypt.Net.BCrypt.HashPassword("test123"), 
-                Role = "Customer", 
-                Email = "test@shop.com" 
-            }
-        );
-        db.SaveChanges();
+        await ExecuteNonQuery(
+            connectionString,
+            @"
+                INSERT INTO Users (Username, Password, Email, Role, CreatedAt)
+                VALUES
+                    (@adminUsername, @adminPassword, @adminEmail, @adminRole, @createdAt),
+                    (@testUsername, @testPassword, @testEmail, @testRole, @createdAt);
+            ",
+            command =>
+            {
+                command.Parameters.AddWithValue("@adminUsername", "admin");
+                command.Parameters.AddWithValue("@adminPassword", BCrypt.Net.BCrypt.HashPassword("admin123"));
+                command.Parameters.AddWithValue("@adminEmail", "admin@shop.com");
+                command.Parameters.AddWithValue("@adminRole", "Admin");
+                command.Parameters.AddWithValue("@testUsername", "testuser");
+                command.Parameters.AddWithValue("@testPassword", BCrypt.Net.BCrypt.HashPassword("test123"));
+                command.Parameters.AddWithValue("@testEmail", "test@shop.com");
+                command.Parameters.AddWithValue("@testRole", "Customer");
+                command.Parameters.AddWithValue("@createdAt", DateTime.UtcNow);
+            });
     }
 
     // Default categories
-    if (!db.Categories.Any())
+    if (!await AnyRows(connectionString, "Categories"))
     {
         Console.WriteLine("[SEED] Creating categories...");
-        db.Categories.AddRange(
-            new Category { Name = "home" },
-            new Category { Name = "clothes" },
-            new Category { Name = "accessoires" },
-            new Category { Name = "collections" }
-        );
-        db.SaveChanges();
+        await ExecuteNonQuery(
+            connectionString,
+            @"
+                INSERT INTO Categories (Name)
+                VALUES
+                    (@home),
+                    (@clothes),
+                    (@accessoires),
+                    (@collections);
+            ",
+            command =>
+            {
+                command.Parameters.AddWithValue("@home", "home");
+                command.Parameters.AddWithValue("@clothes", "clothes");
+                command.Parameters.AddWithValue("@accessoires", "accessoires");
+                command.Parameters.AddWithValue("@collections", "collections");
+            });
         Console.WriteLine("[SEED] Categories created successfully");
     }
 }
@@ -231,45 +240,172 @@ app.MapGet("/searchFunc", (string? searchedProduct, int? categoryId, string? bra
 });
 
 // DEBUG ENDPOINTS
-app.MapGet("/debug/table-counts", (AppDbContext db) =>
+app.MapGet("/debug/table-counts", async (IConfiguration config) =>
 {
-    var counts = new 
-    { 
-        usersCount = db.Users.Count(),
-        categoriesCount = db.Categories.Count(),
-        productsCount = db.Products.Count(),
-        cartsCount = db.Carts.Count(),
-        cartItemsCount = db.CartItems.Count()
+    var connectionString = config.GetConnectionString("Default")
+        ?? throw new InvalidOperationException("Missing Default connection string.");
+
+    var counts = new
+    {
+        usersCount = await CountRows(connectionString, "Users"),
+        categoriesCount = await CountRows(connectionString, "Categories"),
+        productsCount = await CountRows(connectionString, "Products"),
+        cartsCount = await CountRows(connectionString, "Carts"),
+        cartItemsCount = await CountRows(connectionString, "CartItems")
     };
+
     Console.WriteLine($"[DEBUG] Table counts: {System.Text.Json.JsonSerializer.Serialize(counts)}");
     return Results.Ok(counts);
 });
 
-app.MapGet("/debug/categories", (AppDbContext db) =>
+app.MapGet("/debug/categories", async (IConfiguration config) =>
 {
-    var categories = db.Categories
-        .Select(c => new { c.CategoryId, c.Name })
-        .ToList();
+    var connectionString = config.GetConnectionString("Default")
+        ?? throw new InvalidOperationException("Missing Default connection string.");
+
+    var categories = new List<object>();
+
+    await using var connection = new MySqlConnection(connectionString);
+    await connection.OpenAsync();
+    await using var command = new MySqlCommand("SELECT CategoryId, Name FROM Categories", connection);
+    await using var reader = await command.ExecuteReaderAsync();
+
+    while (await reader.ReadAsync())
+    {
+        categories.Add(new
+        {
+            CategoryId = reader.GetInt32("CategoryId"),
+            Name = reader.GetString("Name")
+        });
+    }
+
     Console.WriteLine($"[DEBUG] Categories: {System.Text.Json.JsonSerializer.Serialize(categories)}");
     return Results.Ok(new { totalCategories = categories.Count, categories });
 });
 
-app.MapGet("/debug/products-full", (AppDbContext db) =>
+app.MapGet("/debug/products-full", async (IConfiguration config) =>
 {
-    var products = db.Products
-        .Include(p => p.Category)
-        .Select(p => new 
-        { 
-            p.ProductId, 
-            p.Name, 
-            p.Brand, 
-            p.BasePrice,
-            CategoryId = p.CategoryId,
-            CategoryName = p.Category.Name
-        })
-        .ToList();
+    var connectionString = config.GetConnectionString("Default")
+        ?? throw new InvalidOperationException("Missing Default connection string.");
+
+    var products = new List<object>();
+
+    await using var connection = new MySqlConnection(connectionString);
+    await connection.OpenAsync();
+    await using var command = new MySqlCommand(
+        @"
+            SELECT
+                p.ProductId,
+                p.Name,
+                p.Brand,
+                p.BasePrice,
+                p.CategoryId,
+                c.Name AS CategoryName
+            FROM Products p
+            LEFT JOIN Categories c
+                ON p.CategoryId = c.CategoryId
+        ",
+        connection);
+    await using var reader = await command.ExecuteReaderAsync();
+
+    while (await reader.ReadAsync())
+    {
+        products.Add(new
+        {
+            ProductId = reader.GetInt32("ProductId"),
+            Name = reader.GetString("Name"),
+            Brand = reader.GetString("Brand"),
+            BasePrice = reader.GetDecimal("BasePrice"),
+            CategoryId = reader.GetInt32("CategoryId"),
+            CategoryName = reader["CategoryName"]?.ToString() ?? ""
+        });
+    }
+
     Console.WriteLine($"[DEBUG] Products: {System.Text.Json.JsonSerializer.Serialize(products)}");
     return Results.Ok(new { totalProducts = products.Count, products });
 });
 
 app.Run();
+
+static async Task ExecuteSchemaSqlIfDatabaseIsEmpty(string connectionString)
+{
+    await using var connection = new MySqlConnection(connectionString);
+    await connection.OpenAsync();
+
+    await using var command = connection.CreateCommand();
+    command.CommandText = @"
+        SELECT COUNT(*)
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE();";
+
+    var tableCount = Convert.ToInt32(await command.ExecuteScalarAsync());
+
+    if (tableCount > 0)
+    {
+        return;
+    }
+
+    var schemaPath = Path.Combine(AppContext.BaseDirectory, "schema.sql");
+
+    if (!File.Exists(schemaPath))
+    {
+        schemaPath = Path.Combine(Directory.GetCurrentDirectory(), "schema.sql");
+    }
+
+    if (!File.Exists(schemaPath))
+    {
+        schemaPath = Path.Combine(Directory.GetCurrentDirectory(), "backend", "schema.sql");
+    }
+
+    if (!File.Exists(schemaPath))
+    {
+        throw new FileNotFoundException("Could not find schema.sql.", schemaPath);
+    }
+
+    var schemaSql = File.ReadAllText(schemaPath);
+    var statements = Regex.Split(schemaSql, @";\s*(?:\r?\n|$)")
+        .Select(statement => statement.Trim())
+        .Where(statement => !string.IsNullOrWhiteSpace(statement));
+
+    foreach (var statement in statements)
+    {
+        await using var schemaCommand = new MySqlCommand(statement, connection);
+        await schemaCommand.ExecuteNonQueryAsync();
+    }
+}
+
+static async Task<bool> AnyRows(string connectionString, string tableName)
+{
+    return await CountRows(connectionString, tableName) > 0;
+}
+
+static async Task<int> CountRows(string connectionString, string tableName)
+{
+    var allowedTables = new HashSet<string>
+    {
+        "Users",
+        "Categories",
+        "Products",
+        "Carts",
+        "CartItems"
+    };
+
+    if (!allowedTables.Contains(tableName))
+    {
+        throw new ArgumentException("Table is not allowed.", nameof(tableName));
+    }
+
+    await using var connection = new MySqlConnection(connectionString);
+    await connection.OpenAsync();
+    await using var command = new MySqlCommand($"SELECT COUNT(*) FROM `{tableName}`", connection);
+    return Convert.ToInt32(await command.ExecuteScalarAsync());
+}
+
+static async Task ExecuteNonQuery(string connectionString, string sql, Action<MySqlCommand> configureCommand)
+{
+    await using var connection = new MySqlConnection(connectionString);
+    await connection.OpenAsync();
+    await using var command = new MySqlCommand(sql, connection);
+    configureCommand(command);
+    await command.ExecuteNonQueryAsync();
+}
