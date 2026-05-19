@@ -125,7 +125,12 @@ app.MapPost("/register",
         return Results.Conflict(result.Error);
     }
 
-    return Results.Ok();
+    return Results.Ok(new
+    {
+        id = result.User!.Id,
+        username = result.User.Username,
+        role = result.User.Role
+    });
 });
 
 // PRODUCT ENDPOINTS
@@ -268,11 +273,3 @@ app.MapGet("/debug/products-full", (AppDbContext db) =>
 });
 
 app.Run();
-
-static bool IsPasswordValid(string password, string savedPassword)
-{
-    if (savedPassword.StartsWith("$2"))
-        return BCrypt.Net.BCrypt.Verify(password, savedPassword);
-
-    return savedPassword == password;
-}

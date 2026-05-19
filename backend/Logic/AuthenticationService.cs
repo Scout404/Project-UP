@@ -24,10 +24,7 @@ public class AuthenticationService
             return null;
 
         bool validPassword =
-            BCrypt.Net.BCrypt.Verify(
-                password,
-                user.Password
-            );
+            IsPasswordValid(password, user.Password);
 
         if (!validPassword)
             return null;
@@ -35,7 +32,7 @@ public class AuthenticationService
         return user;
     }
 
-    public async Task<(bool Success, string Error)>
+    public async Task<(bool Success, string Error, User? User)>
         Register(
             string username,
             string email,
@@ -47,7 +44,7 @@ public class AuthenticationService
 
         if (existingUser != null)
         {
-            return (false, "Username already exists");
+            return (false, "Username already exists", null);
         }
 
         var existingEmail =
@@ -55,7 +52,7 @@ public class AuthenticationService
 
         if (existingEmail != null)
         {
-            return (false, "Email already exists");
+            return (false, "Email already exists", null);
         }
 
         var user = new User
@@ -70,6 +67,29 @@ public class AuthenticationService
 
         user.Id = await _users.Create(user);
 
-        return (true, "");
+        return (true, "", user);
+    }
+
+    private static bool IsPasswordValid(
+        string password,
+        string savedPassword
+    )
+    {
+        if (savedPassword.StartsWith("$2"))
+        {
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(
+                    password,
+                    savedPassword
+                );
+            }
+            catch (BCrypt.Net.SaltParseException)
+            {
+                return false;
+            }
+        }
+
+        return savedPassword == password;
     }
 }

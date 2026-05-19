@@ -188,6 +188,10 @@ function AdminPanel({ user, onLogout }) {
     return cat ? cat.name : 'Unknown';
   };
 
+  const isErrorMessage = message.startsWith('Failed') ||
+    message.startsWith('Error') ||
+    message.startsWith('Please');
+
   return (
     <div className="admin-panel">
       {/* HEADER */}
@@ -218,13 +222,6 @@ function AdminPanel({ user, onLogout }) {
           </button>
         </div>
       </header>
-
-      {/* MESSAGE */}
-      {message && (
-        <div className={`message ${message.includes('✔') ? 'success' : 'error'}`}>
-          {message}
-        </div>
-      )}
 
       {/* MAIN */}
       <main className="admin-main">
@@ -425,6 +422,13 @@ function AdminPanel({ user, onLogout }) {
           </section>
         )}
       </main>
+
+      {/* MESSAGE */}
+      {message && (
+        <div className={`message ${isErrorMessage ? 'error' : 'success'}`} role="status">
+          {message}
+        </div>
+      )}
 
       {/* FOOTER */}
       <footer className="admin-footer">

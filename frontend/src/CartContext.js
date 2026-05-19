@@ -1,11 +1,29 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 const CartContext = createContext();
+const GUEST_CART_KEY = "guestCart";
+
+function readGuestCart() {
+  try {
+    const storedCart = localStorage.getItem(GUEST_CART_KEY);
+    return storedCart ? JSON.parse(storedCart) : { items: [] };
+  } catch (err) {
+    console.error("[CART DEBUG] Failed to parse guest cart:", err);
+    localStorage.removeItem(GUEST_CART_KEY);
+    return { items: [] };
+  }
+}
+
+function saveGuestCart(cart) {
+  localStorage.setItem(GUEST_CART_KEY, JSON.stringify(cart));
+}
 
 export function CartProvider({ children, user }) {
   const [cart, setCart] = useState({ items: [] });
   
-  const userId = user?.id ? Number(user.id) : (user?.customer_id ? Number(user.customer_id) : null);
+  const rawUserId = !user?.isGuest && (user?.id ?? user?.customer_id);
+  const parsedUserId = rawUserId ? Number(rawUserId) : null;
+  const userId = Number.isFinite(parsedUserId) ? parsedUserId : null;
   const currentUserIdRef = useRef(userId);
   currentUserIdRef.current = userId;
   
@@ -42,6 +60,8 @@ export function CartProvider({ children, user }) {
 
     if (userId) {
       fetchCart(userId);
+    } else {
+      setCart(readGuestCart());
     }
   }, [fetchCart, userId]);
 
@@ -49,17 +69,37 @@ export function CartProvider({ children, user }) {
     console.log("[CART DEBUG] addToCart called with:", product);
     console.log("[CART DEBUG] Current userId:", userId);
     
-    if (!userId) {
-      console.error("[CART DEBUG] Cannot add to cart - userId is null!");
-      return;
-    }
-
     const payload = {
       variantId: product.variantId,
       name: product.name,
       price: Number(product.price || 0),
-      quantity: 1
+      quantity: Number(product.quantity || 1)
     };
+
+    if (!userId) {
+      setCart((currentCart) => {
+        const existingItem = currentCart.items.find(
+          item => item.variantId === payload.variantId
+        );
+
+        const nextCart = existingItem
+          ? {
+              items: currentCart.items.map(item =>
+                item.variantId === payload.variantId
+                  ? { ...item, quantity: item.quantity + payload.quantity }
+                  : item
+              )
+            }
+          : {
+              items: [...currentCart.items, payload]
+            };
+
+        saveGuestCart(nextCart);
+        return nextCart;
+      });
+
+      return;
+    }
 
     console.log(`[CART DEBUG] POST /cart/add/${userId}`, payload);
 
@@ -85,7 +125,18 @@ export function CartProvider({ children, user }) {
   };
 
   const removeFromCart = async (variantId) => {
-    if (!userId) return;
+    if (!userId) {
+      setCart((currentCart) => {
+        const nextCart = {
+          items: currentCart.items.filter(item => item.variantId !== variantId)
+        };
+
+        saveGuestCart(nextCart);
+        return nextCart;
+      });
+
+      return;
+    }
 
     console.log(`[CART DEBUG] DELETE /cart/remove/${userId}/${variantId}`);
 
