@@ -14,6 +14,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<SearchFunction>();
+
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -34,7 +36,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors("AllowAll");
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 // Database migration and seeding
 using (var scope = app.Services.CreateScope())
@@ -223,13 +225,37 @@ app.MapDelete("/cart/remove/{userId}/{variantId}", async ( CartService service, 
     }
 });
 
-// SEARCH FUNCTION
-app.MapGet("/searchFunc", (string? searchedProduct, int? categoryId, string? brand, 
-    decimal? minPrice, decimal? maxPrice, int? colorId, int? sizeId) =>
-{
-    var search = new SearchFunction();
-    return search.Search(searchedProduct, categoryId, brand, minPrice, maxPrice, colorId, sizeId);
-});
+// // SEARCH FUNCTION
+// app.MapGet("/searchFunc", (string? searchedProduct, int? categoryId, string? brand, 
+//     decimal? minPrice, decimal? maxPrice, int? colorId, int? sizeId) =>
+// {
+//     var search = new SearchFunction();
+//     return search.Search(searchedProduct, categoryId, brand, minPrice, maxPrice, colorId, sizeId);
+// });
+
+app.MapGet("/search",async (
+            SearchFunction search,
+            string? searchedProduct,
+            int? categoryId,
+            string? brand,
+            decimal? minPrice,
+            decimal? maxPrice,
+            int? colorId,
+            int? sizeId
+        ) =>
+        {
+            var products = await search.Search(
+                searchedProduct,
+                categoryId,
+                brand,
+                minPrice,
+                maxPrice,
+                colorId,
+                sizeId
+            );
+
+            return Results.Ok(products);
+        });
 
 // DEBUG ENDPOINTS
 app.MapGet("/debug/table-counts", (AppDbContext db) =>
