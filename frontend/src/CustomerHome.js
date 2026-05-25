@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './CustomerHome.css';
 import LoginModal from './LoginModal';
 import { useCart } from './CartContext';
@@ -13,6 +13,8 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [activePage, setActivePage] = useState("home");
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     fetch("http://localhost:5050/products")
@@ -21,9 +23,27 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
       .catch(err => console.error("Failed to fetch products:", err));
   }, []);
 
-  const filteredProducts = products.filter(
-    p => p.categoryName?.toLowerCase() === activePage && p.isActive
-  );
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const isSearching = normalizedSearch.length > 0;
+
+  const filteredProducts = products.filter((p) => {
+    if (!p.isActive) {
+      return false;
+    }
+
+    const categoryName = p.categoryName?.toLowerCase() || "";
+    const matchesCategory = activePage === "home" || categoryName === activePage;
+    const searchableText = [
+      p.name,
+      p.brand,
+      p.description,
+      p.categoryName
+    ].join(" ").toLowerCase();
+
+    return matchesCategory && (!isSearching || searchableText.includes(normalizedSearch));
+  });
+
+  const showProducts = activePage !== "home" || isSearching;
 
   const totalPrice =
     cart?.items?.reduce(
@@ -47,7 +67,12 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
             {categories.map((category) => (
               <li
                 key={category}
-                onClick={() => setActivePage(category)}
+                onClick={() => {
+                  setActivePage(category);
+                  if (category === "home") {
+                    setSearchQuery("");
+                  }
+                }}
                 style={{
                   cursor: "pointer",
                   fontWeight: activePage === category ? "bold" : "normal",
@@ -60,7 +85,25 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
           </ul>
 
           <div className="customer-actions">
-            <button className="icon-btn">🔍</button>
+            <form className="search-form" onSubmit={(e) => e.preventDefault()}>
+              <button
+                type="button"
+                className="icon-btn"
+                title="Search products"
+                onClick={() => searchInputRef.current?.focus()}
+              >
+                🔍
+              </button>
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products"
+                aria-label="Search products"
+                className="search-input"
+              />
+            </form>
             <button className="icon-btn">❤️</button>
 
             <button
@@ -136,11 +179,13 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
         )}
 
         {/* PRODUCTS */}
-        {activePage !== "home" && (
+        {showProducts && (
           <section className="products-grid">
 
             <h2>
-              {activePage.charAt(0).toUpperCase() + activePage.slice(1)}
+              {isSearching
+                ? `Search results for "${searchQuery.trim()}"`
+                : activePage.charAt(0).toUpperCase() + activePage.slice(1)}
             </h2>
 
             {filteredProducts.length === 0 ? (
