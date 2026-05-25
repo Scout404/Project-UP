@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import React, { useState, useEffect, useRef } from 'react';
 import './CustomerHome.css';
 import LoginModal from './LoginModal';
 import { useCart } from './CartContext';
@@ -31,9 +30,30 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
     return () => window.clearTimeout(cartMessageTimerRef.current);
   }, []);
 
-  const filteredProducts = products.filter(
-    p => p.categoryName?.toLowerCase() === activePage && p.isActive
-  );
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const isSearching = normalizedSearchQuery.length > 0;
+  const showProducts = activePage !== "home" || isSearching;
+
+  const filteredProducts = products.filter((product) => {
+    if (!product.isActive) {
+      return false;
+    }
+
+    if (isSearching) {
+      const searchableText = [
+        product.name,
+        product.brand,
+        product.categoryName
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(normalizedSearchQuery);
+    }
+
+    return product.categoryName?.toLowerCase() === activePage;
+  });
 
   const totalPrice =
     cart?.items?.reduce(
