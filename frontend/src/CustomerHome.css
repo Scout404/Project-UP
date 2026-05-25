@@ -56,6 +56,29 @@
   gap: 0.75rem;
 }
 
+.search-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-input {
+  width: 210px;
+  min-height: 44px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 999px;
+  background: white;
+  padding: 0 1rem;
+  color: #111827;
+  font: inherit;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #111827;
+}
+
 /* BUTTONS */
 .icon-btn,
 .logout-btn,
@@ -278,9 +301,30 @@
 }
 
 @media (max-width: 600px) {
+  .customer-header,
+  .customer-main {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
   .customer-menu {
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 1rem;
     font-size: 0.95rem;
+  }
+
+  .customer-actions {
+    flex-wrap: wrap;
+  }
+
+  .search-form {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-input {
+    width: min(100%, 260px);
   }
 
   .hero-panel h1 {
