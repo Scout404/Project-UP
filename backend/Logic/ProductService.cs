@@ -1,21 +1,47 @@
 using backend.Data;
 using backend.Models;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
+using System.Text.Json;
 
 namespace backend.Logic;
 
 public class ProductService
 {
-    private readonly AppDbContext _context;
+    private const string ProductsCacheKey = "products:all";
+    private static readonly TimeSpan ProductsCacheDuration = TimeSpan.FromMinutes(5);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public ProductService(AppDbContext context)
+    private readonly AppDbContext _context;
+    private readonly IDatabase _cache;
+
+    public ProductService(AppDbContext context, IConnectionMultiplexer redis)
     {
         _context = context;
+        _cache = redis.GetDatabase();
     }
 
     public async Task<List<ProductDto>> GetAll()
     {
-        return await _context.Products
+        try
+        {
+            var cachedProducts = await _cache.StringGetAsync(ProductsCacheKey);
+            if (cachedProducts.HasValue)
+            {
+                var productsFromCache = JsonSerializer.Deserialize<List<ProductDto>>(
+                    cachedProducts.ToString(),
+                    JsonOptions);
+
+                if (productsFromCache != null)
+                    return productsFromCache;
+            }
+        }
+        catch (RedisException ex)
+        {
+            Console.WriteLine($"[REDIS] Product cache read failed: {ex.Message}");
+        }
+
+        var products = await _context.Products
             .Include(p => p.Category)
             .Select(p => new ProductDto
             {
@@ -25,11 +51,25 @@ public class ProductService
                 Brand = p.Brand,
                 BasePrice = p.BasePrice,
                 CategoryId = p.CategoryId,
-                CategoryName = p.Category != null ? p.Category.Name : null,
+                CategoryName = p.Category != null ? p.Category.Name : "",
                 IsActive = p.IsActive,
                 StockQuantity = p.StockQuantity
             })
             .ToListAsync();
+
+        try
+        {
+            await _cache.StringSetAsync(
+                ProductsCacheKey,
+                JsonSerializer.Serialize(products, JsonOptions),
+                ProductsCacheDuration);
+        }
+        catch (RedisException ex)
+        {
+            Console.WriteLine($"[REDIS] Product cache write failed: {ex.Message}");
+        }
+
+        return products;
     }
 
     public async Task<ProductDto?> GetById(int id)
@@ -70,6 +110,7 @@ public class ProductService
 
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
+        await ClearProductsCache();
 
         return product;
     }
@@ -108,6 +149,7 @@ public class ProductService
         }
 
         await _context.SaveChangesAsync();
+        await ClearProductsCache();
         return true;
     }
 
@@ -118,12 +160,9 @@ public class ProductService
 
         _context.Products.Remove(product);
         await _context.SaveChangesAsync();
+        await ClearProductsCache();
         return true;
     }
-
-    // =========================
-    // ✅ STOCK MANAGEMENT API
-    // =========================
 
     public async Task<bool> SetStock(int productId, int quantity)
     {
@@ -132,6 +171,7 @@ public class ProductService
 
         product.StockQuantity = quantity;
         await _context.SaveChangesAsync();
+        await ClearProductsCache();
         return true;
     }
 
@@ -142,6 +182,7 @@ public class ProductService
 
         product.StockQuantity += amount;
         await _context.SaveChangesAsync();
+        await ClearProductsCache();
         return true;
     }
 
@@ -155,7 +196,20 @@ public class ProductService
 
         product.StockQuantity -= amount;
         await _context.SaveChangesAsync();
+        await ClearProductsCache();
 
         return true;
+    }
+
+    private async Task ClearProductsCache()
+    {
+        try
+        {
+            await _cache.KeyDeleteAsync(ProductsCacheKey);
+        }
+        catch (RedisException ex)
+        {
+            Console.WriteLine($"[REDIS] Product cache clear failed: {ex.Message}");
+        }
     }
 }

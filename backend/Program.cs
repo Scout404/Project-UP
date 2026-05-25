@@ -2,6 +2,7 @@ using backend.Data;
 using backend.Logic;
 using backend.Models;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("Default"))
     )
 );
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+{
+    var redisConnection = builder.Configuration.GetConnectionString("Redis")
+        ?? "localhost:6379,abortConnect=false";
+
+    return ConnectionMultiplexer.Connect(redisConnection);
+});
 
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CartService>();
