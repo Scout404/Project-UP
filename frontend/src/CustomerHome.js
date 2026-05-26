@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import './CustomerHome.css';
 import LoginModal from './LoginModal';
 import { useCart } from './CartContext';
+import { apiUrl } from './api';
 
 function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const categories = ['home', 'clothes', 'accessoires', 'collections'];
   const links = ['contact', 'about us', 'support'];
+  const isLoggedIn = Boolean(user && !user.isGuest);
 
   const { cart, addToCart, removeFromCart } = useCart();
 
@@ -13,37 +15,46 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [activePage, setActivePage] = useState("home");
+  const [cartMessage, setCartMessage] = useState("");
+  const cartMessageTimerRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
 
   useEffect(() => {
-    fetch("http://localhost:5050/products")
+    fetch(apiUrl("/products"))
       .then(res => res.json())
       .then(setProducts)
       .catch(err => console.error("Failed to fetch products:", err));
   }, []);
 
-  const normalizedSearch = searchQuery.trim().toLowerCase();
-  const isSearching = normalizedSearch.length > 0;
+  useEffect(() => {
+    return () => window.clearTimeout(cartMessageTimerRef.current);
+  }, []);
 
-  const filteredProducts = products.filter((p) => {
-    if (!p.isActive) {
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const isSearching = normalizedSearchQuery.length > 0;
+  const showProducts = activePage !== "home" || isSearching;
+
+  const filteredProducts = products.filter((product) => {
+    if (!product.isActive) {
       return false;
     }
 
-    const categoryName = p.categoryName?.toLowerCase() || "";
-    const matchesCategory = activePage === "home" || categoryName === activePage;
-    const searchableText = [
-      p.name,
-      p.brand,
-      p.description,
-      p.categoryName
-    ].join(" ").toLowerCase();
+    if (isSearching) {
+      const searchableText = [
+        product.name,
+        product.brand,
+        product.categoryName
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-    return matchesCategory && (!isSearching || searchableText.includes(normalizedSearch));
+      return searchableText.includes(normalizedSearchQuery);
+    }
+
+    return product.categoryName?.toLowerCase() === activePage;
   });
-
-  const showProducts = activePage !== "home" || isSearching;
 
   const totalPrice =
     cart?.items?.reduce(
@@ -54,6 +65,16 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const handleLoginSuccess = (userData) => {
     setIsLoginModalOpen(false);
     onLoginSuccess(userData);
+  };
+
+  const handleAddToCart = (product) => {
+    addToCart(product);
+    setCartMessage(`${product.name} added to cart`);
+
+    window.clearTimeout(cartMessageTimerRef.current);
+    cartMessageTimerRef.current = window.setTimeout(() => {
+      setCartMessage("");
+    }, 1800);
   };
 
   return (
@@ -114,7 +135,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
             </button>
 
             {/* Account button - opens login modal if guest, shows user menu if logged in */}
-            {!user ? (
+            {!isLoggedIn ? (
               <button
                 className="icon-btn"
                 onClick={() => setIsLoginModalOpen(true)}
@@ -129,14 +150,14 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
             )}
 
             {/* Logout button - only visible if logged in */}
-            {user && (
+            {isLoggedIn && (
               <button className="logout-btn" onClick={onLogout}>
                 Logout
               </button>
             )}
 
             {/* Login button - only visible if guest */}
-            {!user && (
+            {!isLoggedIn && (
               <button 
                 className="logout-btn" 
                 onClick={() => setIsLoginModalOpen(true)}
@@ -203,7 +224,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
 
                     <button
                       onClick={() => {
-                        addToCart({
+                        handleAddToCart({
                           variantId: id,
                           name: p.name,
                           price: Number(price),
@@ -223,6 +244,12 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
         )}
 
       </main>
+
+      {cartMessage && (
+        <p className="cart-message" role="status">
+          {cartMessage}
+        </p>
+      )}
 
       {/* CART */}
       {isCartOpen && (

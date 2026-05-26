@@ -1,119 +1,83 @@
 using backend.Data;
 using backend.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace backend.Logic;
 
 public class CartService
 {
-    private readonly AppDbContext _db;
+    private readonly CartRepository _cartRepository;
 
-    public CartService(AppDbContext db)
+    public CartService(CartRepository cartRepository)
     {
-        _db = db;
+        _cartRepository = cartRepository;
     }
 
     public async Task<CartDto> GetCart(int userId)
     {
-        var cart = await _db.Carts
-            .Include(c => c.Items)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+        var cart = await _cartRepository.GetCart(userId);
 
-        if (cart == null)
+        if (cart != null)
+            return cart;
+
+        await _cartRepository.CreateCart(userId);
+
+        return new CartDto
         {
-            cart = new Cart
-            {
-                UserId = userId,
-                Items = new List<CartItem>()
-            };
-
-            _db.Carts.Add(cart);
-            await _db.SaveChangesAsync();
-        }
-
-        return MapCart(cart);
+            UserId = userId,
+            Items = new List<CartItemDto>()
+        };
+        
     }
 
     public async Task<CartDto> AddToCart(int userId, AddToCartRequest req)
     {
-        var cart = await _db.Carts
-            .Include(c => c.Items)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+        int? cartId = await _cartRepository.GetCartId(userId);
 
-        if (cart == null)
+        if (cartId == null)
         {
-            cart = new Cart
-            {
-                UserId = userId,
-                Items = new List<CartItem>()
-            };
-
-            _db.Carts.Add(cart);
-            await _db.SaveChangesAsync();
+            cartId = await _cartRepository.CreateCart(userId);
         }
 
-        var product = await _db.Products
-            .FirstOrDefaultAsync(p => p.ProductId == req.VariantId);
+        var product = await _cartRepository.GetProduct(req.VariantId);
 
         if (product == null)
             throw new Exception("Product not found");
 
-        var existing = cart.Items
-            .FirstOrDefault(x => x.VariantId == req.VariantId);
+        var existingItem = await _cartRepository.GetCartItem(
+            cartId.Value,
+            req.VariantId);
 
-        if (existing != null)
+        if (existingItem != null)
         {
-            existing.Quantity += req.Quantity;
+            await _cartRepository.UpdateCartItemQuantity(
+                cartId.Value,
+                req.VariantId,
+                existingItem.Quantity + req.Quantity);
         }
         else
         {
-            cart.Items.Add(new CartItem
-            {
-                VariantId = req.VariantId,
-                Name = product.Name,
-                Price = product.BasePrice,
-                Quantity = req.Quantity
-            });
+            await _cartRepository.AddCartItem(
+                cartId.Value,
+                req.VariantId,
+                product.Name ?? "Unknown",
+                product.BasePrice,
+                req.Quantity);
         }
 
-        await _db.SaveChangesAsync();
-
-        return MapCart(cart);
+        return await GetCart(userId);
     }
 
     public async Task<CartDto?> RemoveFromCart(int userId, int variantId)
     {
-        var cart = await _db.Carts
-            .Include(c => c.Items)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+        int? cartId = await _cartRepository.GetCartId(userId);
 
-        if (cart == null)
+        if (cartId == null)
             return null;
 
-        var item = cart.Items
-            .FirstOrDefault(i => i.VariantId == variantId);
+        await _cartRepository.RemoveCartItem(
+            cartId.Value,
+            variantId);
 
-        if (item != null)
-        {
-            _db.CartItems.Remove(item);
-            await _db.SaveChangesAsync();
-        }
-
-        return MapCart(cart);
-    }
-
-    private CartDto MapCart(Cart cart)
-    {
-        return new CartDto
-        {
-            UserId = cart.UserId,
-            Items = cart.Items.Select(i => new CartItemDto
-            {
-                VariantId = i.VariantId,
-                Name = i.Name ?? "Unknown",
-                Price = i.Price,
-                Quantity = i.Quantity
-            }).ToList()
-        };
+        return await GetCart(userId);
     }
 }

@@ -9,25 +9,40 @@ function App() {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   useEffect(() => {
-    // If user is already logged in
     const storedUser = localStorage.getItem('user');
+
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
+
         console.log('[APP DEBUG] Loaded user from localStorage:', userData);
-        setUser(userData);
+
+        if (userData?.id && Number.isFinite(Number(userData.id))) {
+          setUser({
+            ...userData,
+            isGuest: false
+          });
+        } else {
+          localStorage.removeItem('user');
+        }
       } catch (err) {
         console.error('Failed to parse stored user:', err);
         localStorage.removeItem('user');
       }
     }
+
     setIsLoadingUser(false);
   }, []);
 
   const handleLoginSuccess = (userData) => {
     console.log('[APP DEBUG] User logged in:', userData);
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    const loggedInUser = {
+      ...userData,
+      isGuest: false
+    };
+
+    setUser(loggedInUser);
+    localStorage.setItem('user', JSON.stringify(loggedInUser));
   };
 
   const handleLogout = () => {
