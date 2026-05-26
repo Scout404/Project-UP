@@ -7,4 +7,6 @@ public class ProductUpdateRequest
     public int? StockQuantity { get; set; }
     public int? CategoryId { get; set; }
     public bool? IsActive { get; set; }
+    public string? ColorName { get; set; }
+    public string? SizeName { get; set; }
 }
