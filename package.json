@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "powershell -ExecutionPolicy Bypass -File scripts/dev.ps1",
+    "share": "powershell -ExecutionPolicy Bypass -File scripts/share.ps1",
     "dev:backend": "dotnet run --project backend/backend.csproj --launch-profile http",
     "dev:frontend": "npm --prefix frontend run dev",
     "start": "npm --prefix frontend start",
