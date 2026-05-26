@@ -1,6 +1,7 @@
 using backend.Data;
 using backend.Logic;
 using backend.Models;
+using Microsoft.Extensions.FileProviders;
 using MySqlConnector;
 using System.Text.RegularExpressions;
 
@@ -30,9 +31,26 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+var frontendBuildPath = Path.GetFullPath(
+    Path.Combine(app.Environment.ContentRootPath, "..", "frontend", "build"));
 
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
+
+if (Directory.Exists(frontendBuildPath))
+{
+    var frontendFiles = new PhysicalFileProvider(frontendBuildPath);
+
+    app.UseDefaultFiles(new DefaultFilesOptions
+    {
+        FileProvider = frontendFiles
+    });
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = frontendFiles
+    });
+}
 
 // Database schema and seeding
 using (var scope = app.Services.CreateScope())
@@ -324,6 +342,15 @@ app.MapGet("/debug/products-full", async (IConfiguration config) =>
     Console.WriteLine($"[DEBUG] Products: {System.Text.Json.JsonSerializer.Serialize(products)}");
     return Results.Ok(new { totalProducts = products.Count, products });
 });
+
+if (Directory.Exists(frontendBuildPath))
+{
+    app.MapFallback(async context =>
+    {
+        context.Response.ContentType = "text/html";
+        await context.Response.SendFileAsync(Path.Combine(frontendBuildPath, "index.html"));
+    });
+}
 
 app.Run();
 
