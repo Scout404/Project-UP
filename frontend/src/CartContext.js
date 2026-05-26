@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { apiUrl } from "./api";
 
 const CartContext = createContext();
 const GUEST_CART_KEY = "guestCart";
@@ -38,7 +39,7 @@ export function CartProvider({ children, user }) {
 
     console.log(`[CART DEBUG] Fetching cart for userId: ${cartUserId}`);
     try {
-      const res = await fetch(`http://localhost:5050/cart/${cartUserId}`);
+      const res = await fetch(apiUrl(`/cart/${cartUserId}`));
       if (!res.ok) {
         console.error(`[CART DEBUG] Fetch failed with status ${res.status}`);
         return;
@@ -104,7 +105,7 @@ export function CartProvider({ children, user }) {
     console.log(`[CART DEBUG] POST /cart/add/${userId}`, payload);
 
     try {
-      const res = await fetch(`http://localhost:5050/cart/add/${userId}`, {
+      const res = await fetch(apiUrl(`/cart/add/${userId}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -141,7 +142,7 @@ export function CartProvider({ children, user }) {
     console.log(`[CART DEBUG] DELETE /cart/remove/${userId}/${variantId}`);
 
     try {
-      const res = await fetch(`http://localhost:5050/cart/remove/${userId}/${variantId}`, {
+      const res = await fetch(apiUrl(`/cart/remove/${userId}/${variantId}`), {
         method: "DELETE"
       });
 

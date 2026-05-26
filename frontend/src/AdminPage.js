@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AdminDashboard.css';
+import { apiUrl } from './api';
 
 function AdminPanel({ user, onLogout }) {
   const [products, setProducts] = useState([]);
@@ -26,7 +27,7 @@ function AdminPanel({ user, onLogout }) {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:5050/debug/categories');
+      const response = await fetch(apiUrl('/debug/categories'));
       const data = await response.json();
       setCategories(data.categories);
     } catch (err) {
@@ -36,7 +37,7 @@ function AdminPanel({ user, onLogout }) {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost:5050/products');
+      const response = await fetch(apiUrl('/products'));
       const data = await response.json();
       setProducts(data);
     } catch (err) {
@@ -65,8 +66,8 @@ function AdminPanel({ user, onLogout }) {
 
     try {
       const url = editingId 
-        ? `http://localhost:5050/products/${editingId}`
-        : 'http://localhost:5050/products';
+        ? apiUrl(`/products/${editingId}`)
+        : apiUrl('/products');
       
       const method = editingId ? 'PUT' : 'POST';
 
@@ -139,7 +140,7 @@ function AdminPanel({ user, onLogout }) {
   const handleDeleteProduct = async (productId) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        const response = await fetch(`http://localhost:5050/products/${productId}`, {
+        const response = await fetch(apiUrl(`/products/${productId}`), {
           method: 'DELETE'
         });
 
@@ -157,7 +158,7 @@ function AdminPanel({ user, onLogout }) {
 
   const toggleProductStatus = async (product) => {
     try {
-      const response = await fetch(`http://localhost:5050/products/${product.productId}`, {
+      const response = await fetch(apiUrl(`/products/${product.productId}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

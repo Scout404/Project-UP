@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './CustomerHome.css';
 import LoginModal from './LoginModal';
 import { useCart } from './CartContext';
+import { apiUrl } from './api';
 
 function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const categories = ['home', 'clothes', 'accessoires', 'collections'];
@@ -20,7 +21,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const searchInputRef = useRef(null);
 
   useEffect(() => {
-    fetch("http://localhost:5050/products")
+    fetch(apiUrl("/products"))
       .then(res => res.json())
       .then(setProducts)
       .catch(err => console.error("Failed to fetch products:", err));
