@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './Login.css';
+import { apiUrl } from './api';
 
 function Login({ onLoginSuccess, onGuestContinue }) {
   const [mode, setMode] = useState('login');
@@ -16,7 +17,7 @@ function Login({ onLoginSuccess, onGuestContinue }) {
 
     try {
       const endpoint = mode === 'login' ? 'login' : 'register';
-      const response = await fetch(`http://localhost:5050/${endpoint}`, {
+      const response = await fetch(apiUrl(`/${endpoint}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

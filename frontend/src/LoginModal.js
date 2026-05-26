@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './LoginModal.css';
+import { apiUrl } from './api';
 
 function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [mode, setMode] = useState('login');
@@ -16,7 +17,7 @@ function LoginModal({ isOpen, onClose, onLoginSuccess }) {
 
     try {
       const endpoint = mode === 'login' ? 'login' : 'register';
-      const response = await fetch(`http://localhost:5050/${endpoint}`, {
+      const response = await fetch(apiUrl(`/${endpoint}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
