@@ -446,6 +446,22 @@ app.MapGet("/debug/products-full", async (IConfiguration config) =>
     return Results.Ok(new { totalProducts = products.Count, products });
 });
 
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var productService = scope.ServiceProvider.GetRequiredService<ProductService>();
+
+    try
+    {
+        Console.WriteLine("[PRELOAD] Loading /products cache...");
+        await productService.GetAll();
+        Console.WriteLine("[PRELOAD] /products cache loaded.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[PRELOAD] Failed to load products: {ex.Message}");
+    }
+}
+
 if (Directory.Exists(frontendBuildPath))
 {
     app.MapFallback(async context =>

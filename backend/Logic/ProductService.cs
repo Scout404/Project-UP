@@ -1,6 +1,7 @@
 using backend.Data;
 using StackExchange.Redis;
 using System.Text.Json;
+using System.Threading;
 
 namespace backend.Logic;
 
@@ -9,6 +10,10 @@ public class ProductService
     private const string ProductsCacheKey = "products:all";
     private static readonly TimeSpan ProductsCacheDuration = TimeSpan.FromMinutes(5);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    private static readonly SemaphoreSlim CacheLock = new(1, 1);
+    private static List<ProductDto>? _inMemoryProductCache;
+    private static DateTime _inMemoryCacheExpiration = DateTime.MinValue;
 
     private readonly ProductRepository _products;
     private readonly IConnectionMultiplexer _redis;
@@ -23,45 +28,69 @@ public class ProductService
 
     public async Task<List<ProductDto>> GetAll()
     {
-        if (IsRedisAvailable())
+        if (_inMemoryProductCache is not null && DateTime.UtcNow < _inMemoryCacheExpiration)
         {
-            try
-            {
-                var cachedProducts = await _cache.StringGetAsync(ProductsCacheKey);
-                if (cachedProducts.HasValue)
-                {
-                    var productsFromCache = JsonSerializer.Deserialize<List<ProductDto>>(
-                        cachedProducts.ToString(),
-                        JsonOptions);
+            return _inMemoryProductCache;
+        }
 
-                    if (productsFromCache != null)
-                        return productsFromCache;
+        await CacheLock.WaitAsync();
+        try
+        {
+            if (_inMemoryProductCache is not null && DateTime.UtcNow < _inMemoryCacheExpiration)
+            {
+                return _inMemoryProductCache;
+            }
+
+            if (IsRedisAvailable())
+            {
+                try
+                {
+                    var cachedProducts = await _cache.StringGetAsync(ProductsCacheKey);
+                    if (cachedProducts.HasValue)
+                    {
+                        var productsFromCache = JsonSerializer.Deserialize<List<ProductDto>>(
+                            cachedProducts.ToString(),
+                            JsonOptions);
+
+                        if (productsFromCache != null)
+                        {
+                            _inMemoryProductCache = productsFromCache;
+                            _inMemoryCacheExpiration = DateTime.UtcNow.Add(ProductsCacheDuration);
+                            return productsFromCache;
+                        }
+                    }
+                }
+                catch (RedisException ex)
+                {
+                    Console.WriteLine($"[REDIS] Product cache read skipped: {ex.Message}");
                 }
             }
-            catch (RedisException ex)
+
+            var products = await _products.GetAll();
+            _inMemoryProductCache = products;
+            _inMemoryCacheExpiration = DateTime.UtcNow.Add(ProductsCacheDuration);
+
+            if (IsRedisAvailable())
             {
-                Console.WriteLine($"[REDIS] Product cache read skipped: {ex.Message}");
+                try
+                {
+                    await _cache.StringSetAsync(
+                        ProductsCacheKey,
+                        JsonSerializer.Serialize(products, JsonOptions),
+                        ProductsCacheDuration);
+                }
+                catch (RedisException ex)
+                {
+                    Console.WriteLine($"[REDIS] Product cache write skipped: {ex.Message}");
+                }
             }
+
+            return products;
         }
-
-        var products = await _products.GetAll();
-
-        if (IsRedisAvailable())
+        finally
         {
-            try
-            {
-                await _cache.StringSetAsync(
-                    ProductsCacheKey,
-                    JsonSerializer.Serialize(products, JsonOptions),
-                    ProductsCacheDuration);
-            }
-            catch (RedisException ex)
-            {
-                Console.WriteLine($"[REDIS] Product cache write skipped: {ex.Message}");
-            }
+            CacheLock.Release();
         }
-
-        return products;
     }
 
     public async Task<ProductDto?> GetById(int id)
@@ -201,6 +230,9 @@ public class ProductService
 
     private async Task ClearProductsCache()
     {
+        _inMemoryProductCache = null;
+        _inMemoryCacheExpiration = DateTime.MinValue;
+
         if (!IsRedisAvailable())
             return;
 

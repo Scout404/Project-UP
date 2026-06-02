@@ -16,6 +16,8 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [products, setProducts] = useState([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [productError, setProductError] = useState(null);
   const [activePage, setActivePage] = useState("home");
   const [cartMessage, setCartMessage] = useState("");
   const cartMessageTimerRef = useRef(null);
@@ -23,10 +25,24 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const searchInputRef = useRef(null);
 
   useEffect(() => {
-    fetch(apiUrl("/products"))
-      .then(res => res.json())
-      .then(setProducts)
-      .catch(err => console.error("Failed to fetch products:", err));
+    const loadProducts = async () => {
+      try {
+        const res = await fetch(apiUrl("/products"));
+        if (!res.ok) {
+          throw new Error(`Server returned ${res.status}`);
+        }
+
+        const data = await res.json();
+        setProducts(data);
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+        setProductError("Unable to load products. Please refresh the page.");
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+
+    loadProducts();
   }, []);
 
   useEffect(() => {
@@ -218,7 +234,11 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
                 : activePage.charAt(0).toUpperCase() + activePage.slice(1)}
             </h2>
 
-            {filteredProducts.length === 0 ? (
+            {isLoadingProducts ? (
+              <p>Loading products...</p>
+            ) : productError ? (
+              <p>{productError}</p>
+            ) : filteredProducts.length === 0 ? (
               <p>No items found.</p>
             ) : (
               filteredProducts.map(p => {
