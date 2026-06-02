@@ -183,7 +183,7 @@ public class CartRepository
             {
                 Id = Convert.ToInt32(reader["CartItemId"]),
                 VariantId = Convert.ToInt32(reader["VariantId"]),
-                Name = reader["Name"].ToString(),
+                Name = reader["Name"].ToString() ?? "",
                 Price = Convert.ToDecimal(reader["Price"]),
                 Quantity = Convert.ToInt32(reader["Quantity"])
             };

@@ -4,8 +4,17 @@ using backend.Models;
 using Microsoft.Extensions.FileProviders;
 using MySqlConnector;
 using System.Text.RegularExpressions;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+{
+    var redisConnection = builder.Configuration.GetConnectionString("Redis")
+        ?? "localhost:6379,abortConnect=false";
+
+    return ConnectionMultiplexer.Connect(redisConnection);
+});
 
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthenticationService>();
