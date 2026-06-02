@@ -29,7 +29,16 @@ public class ProductRepository
                 p.CategoryId,
                 c.Name AS CategoryName,
                 p.IsActive,
-                p.StockQuantity
+                p.StockQuantity,
+                (
+                    SELECT pv.PictureUrl
+                    FROM ProductVariants pv
+                    WHERE pv.ProductId = p.ProductId
+                        AND pv.PictureUrl IS NOT NULL
+                        AND pv.PictureUrl <> ''
+                    ORDER BY pv.ProductVariantId
+                    LIMIT 1
+                ) AS ImageUrl
             FROM Products p
             LEFT JOIN Categories c
                 ON p.CategoryId = c.CategoryId
@@ -51,7 +60,8 @@ public class ProductRepository
                 CategoryId = Convert.ToInt32(reader["CategoryId"]),
                 CategoryName = reader["CategoryName"].ToString() ?? "",
                 IsActive = Convert.ToBoolean(reader["IsActive"]),
-                StockQuantity = Convert.ToInt32(reader["StockQuantity"])
+                StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
+                ImageUrl = reader["ImageUrl"] == DBNull.Value ? null : reader["ImageUrl"].ToString()
             });
         }
 
@@ -74,7 +84,16 @@ public class ProductRepository
                 p.CategoryId,
                 c.Name AS CategoryName,
                 p.IsActive,
-                p.StockQuantity
+                p.StockQuantity,
+                (
+                    SELECT pv.PictureUrl
+                    FROM ProductVariants pv
+                    WHERE pv.ProductId = p.ProductId
+                        AND pv.PictureUrl IS NOT NULL
+                        AND pv.PictureUrl <> ''
+                    ORDER BY pv.ProductVariantId
+                    LIMIT 1
+                ) AS ImageUrl
             FROM Products p
             LEFT JOIN Categories c
                 ON p.CategoryId = c.CategoryId
@@ -99,7 +118,8 @@ public class ProductRepository
                 CategoryId = Convert.ToInt32(reader["CategoryId"]),
                 CategoryName = reader["CategoryName"].ToString() ?? "",
                 IsActive = Convert.ToBoolean(reader["IsActive"]),
-                StockQuantity = Convert.ToInt32(reader["StockQuantity"])
+                StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
+                ImageUrl = reader["ImageUrl"] == DBNull.Value ? null : reader["ImageUrl"].ToString()
             };
         }
 

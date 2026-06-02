@@ -9,4 +9,5 @@ public class ProductDto
     public int CategoryId { get; set; }
     public string CategoryName { get; set; } = null!;
     public bool IsActive { get; set; }
+    public string? ImageUrl { get; set; }
 }

@@ -141,6 +141,7 @@ CREATE TABLE IF NOT EXISTS `Reviews` (
     `CustomerId` INT NOT NULL,
     `ReviewText` LONGTEXT NOT NULL,
     `Rating` INT NOT NULL,
+    `CreatedAt` DATETIME(6) NULL,
     CONSTRAINT `PK_Reviews` PRIMARY KEY (`ReviewId`),
     CONSTRAINT `FK_Reviews_Customer_CustomerId`
         FOREIGN KEY (`CustomerId`) REFERENCES `Customer` (`CustomerId`)

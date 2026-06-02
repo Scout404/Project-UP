@@ -96,6 +96,49 @@ public class UserRepository
         return null;
     }
 
+    public async Task<User?> GetById(int id)
+    {
+        using var connection =
+            new MySqlConnection(_connectionString);
+
+        await connection.OpenAsync();
+
+        string sql = @"
+            SELECT
+                Id,
+                Username,
+                Password,
+                Email,
+                Role,
+                CreatedAt
+            FROM Users
+            WHERE Id = @id
+        ";
+
+        using var command =
+            new MySqlCommand(sql, connection);
+
+        command.Parameters.AddWithValue("@id", id);
+
+        using var reader =
+            await command.ExecuteReaderAsync();
+
+        if (await reader.ReadAsync())
+        {
+            return new User
+            {
+                Id = Convert.ToInt32(reader["Id"]),
+                Username = reader["Username"].ToString() ?? "",
+                Password = reader["Password"].ToString() ?? "",
+                Email = reader["Email"].ToString() ?? "",
+                Role = reader["Role"].ToString() ?? "",
+                CreatedAt = Convert.ToDateTime(reader["CreatedAt"])
+            };
+        }
+
+        return null;
+    }
+
     public async Task<int> Create(User user)
     {
         using var connection =
