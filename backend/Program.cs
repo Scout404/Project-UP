@@ -14,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<CheckoutService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -77,7 +78,7 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("[SEED] Categories created successfully");
     }
 }
-
+Console.WriteLine("🔥 BACKEND STARTED");
 // LOGIN ENDPOINT
 app.MapPost("/login", (AppDbContext db, LoginRequest request) =>
 {
@@ -185,6 +186,7 @@ app.MapDelete("/products/{id}", async (ProductService service, int id) =>
 // CART ENDPOINTS
 app.MapGet("/cart/{userId}", async (CartService service, int userId) =>
 {
+    Console.WriteLine($"[CHECKOUT] userId received: {userId}");
     var cart = await service.GetCart(userId);
 
     return Results.Ok(cart);
@@ -220,6 +222,28 @@ app.MapDelete("/cart/remove/{userId}/{variantId}", async ( CartService service, 
     {
         Console.WriteLine($"[ERROR] Remove from cart: {ex.Message}");
         return Results.StatusCode(500);
+    }
+});
+
+// CHECKOUT ENDPOINT
+app.MapPost("/checkout/{userId}",
+async (CheckoutService service, int userId, CheckoutRequest request) =>
+{
+    try
+    {
+        Console.WriteLine($"🔥 CHECKOUT HIT userId={userId}");
+
+        var order = await service.Checkout(userId, request);
+
+        return Results.Ok(order);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ CHECKOUT ERROR:");
+        Console.WriteLine(ex.Message);
+        Console.WriteLine(ex.StackTrace);
+
+        return Results.Problem(ex.Message);
     }
 });
 

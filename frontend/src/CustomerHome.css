@@ -124,6 +124,31 @@
   border-color: #94a3b8 !important;
 }
 
+.cart-btn {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: #111827;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* checkout */ 
+.checkout-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.checkout-page input,
+.checkout-page select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
 
 /* HERO */
 .hero-panel {

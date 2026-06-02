@@ -16,6 +16,13 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
 
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Card");
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     fetch("http://localhost:5050/products")
       .then(res => res.json())
@@ -43,7 +50,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
     return matchesCategory && (!isSearching || searchableText.includes(normalizedSearch));
   });
 
-  const showProducts = activePage !== "home" || isSearching;
+  const showProducts = (activePage !== "home" && activePage !== "checkout") || isSearching; //show prod
 
   const totalPrice =
     cart?.items?.reduce(
@@ -54,6 +61,60 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const handleLoginSuccess = (userData) => {
     setIsLoginModalOpen(false);
     onLoginSuccess(userData);
+  };
+
+
+  const handleCheckout = async () => {
+    try {
+      setLoading(true);
+
+      // delay
+      await new Promise(res => setTimeout(res, 2000));
+
+      const userId = user?.id || localStorage.getItem("userId");
+      if (!userId) {
+      console.error("NO USER ID FOUND");
+      alert("You must be logged in");
+      return;
+      }
+
+      console.log("USER:", user);
+      console.log("LOCAL USERID:", localStorage.getItem("userId"));
+
+      const res = await fetch(`http://localhost:5050/checkout/${userId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          street,
+          city,
+          postalCode,
+          country,
+          paymentMethod
+        })
+      });
+
+
+      const text = await res.text();
+      let data;
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = text;
+      }
+
+      console.log("CHECKOUT RESPONSE:", data);
+
+      setActivePage("Order was a success");
+
+    } catch (err) {
+      console.error(err);
+      alert("Checkout failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -189,7 +250,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
             </h2>
 
             {filteredProducts.length === 0 ? (
-              <p>No items found.</p>
+              <p>see you soon!</p>
             ) : (
               filteredProducts.map(p => {
                 const id = p.productId; 
@@ -219,6 +280,56 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
               })
             )}
 
+          </section>
+        )}
+
+        {/* CHECKOUT */}
+        {activePage === "checkout" && (
+          <section className="checkout-page">
+            <h2>Checkout</h2>
+
+            {loading ? (
+              <p>Processing payment...</p>
+            ) : (
+              <>
+              <label>Street</label>
+              <input
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+              />
+
+              <label>City</label>
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+
+              <label>Postal Code</label>
+              <input
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+              />
+
+              <label>Country</label>
+              <input
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+              />
+
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
+                  <option value="Card">Card</option>
+                  <option value="PayPal">PayPal</option>
+                  <option value="Klarna">Klarna</option>
+                </select>
+
+                <button className="primary-btn" onClick={handleCheckout}>
+                  Place Order
+                </button>
+              </>
+            )}
           </section>
         )}
 
@@ -256,13 +367,24 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
                 </h3>
               </>
             )}
+            <div className = "cart-ActionsAndCheckout">
+              <button onClick={() => setIsCartOpen(false)}>
+                Continue Shopping
+              </button>
 
-            <button onClick={() => setIsCartOpen(false)}>
-              Close
-            </button>
+              <button
+                className="cartbutton"
+                onClick={() => {
+                  setIsCartOpen(false);
+                  setActivePage("checkout");
+                }}
+              >
+                  Checkout
+              </button>
 
           </div>
         </div>
+      </div>
       )}
 
       {/* FOOTER */}
