@@ -20,6 +20,7 @@ builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<CartRepository>();
+builder.Services.AddScoped<ReviewRepository>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CartService>();
 
@@ -175,6 +176,99 @@ app.MapGet("/products", async (ProductService service) =>
     var products = await service.GetAll();
 
     return Results.Ok(products);
+});
+
+app.MapGet("/products/{id}", async (ProductService service, int id) =>
+{
+    var product = await service.GetById(id);
+
+    if (product == null)
+        return Results.NotFound();
+
+    return Results.Ok(product);
+});
+
+app.MapGet("/products/{productId}/reviews", async (ReviewRepository reviews, int productId) =>
+{
+    var productReviews = await reviews.GetByProductId(productId);
+
+    return Results.Ok(productReviews);
+});
+
+app.MapPost("/products/{productId}/reviews", async (
+    ReviewRepository reviews,
+    UserRepository users,
+    int productId,
+    ReviewCreateRequest request) =>
+{
+    var reviewText = request.ReviewText?.Trim();
+
+    if (request.UserId <= 0 || string.IsNullOrWhiteSpace(reviewText))
+    {
+        return Results.BadRequest("User and review text are required.");
+    }
+
+    if (request.Rating < 1 || request.Rating > 5)
+    {
+        return Results.BadRequest("Rating must be between 1 and 5.");
+    }
+
+    var user = await users.GetById(request.UserId);
+
+    if (user == null)
+    {
+        return Results.NotFound("User not found.");
+    }
+
+    if (!string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase))
+    {
+        return Results.Forbid();
+    }
+
+    var created = await reviews.Add(productId, user, reviewText, request.Rating);
+
+    if (created == null)
+    {
+        return Results.NotFound("Product not found.");
+    }
+
+    return Results.Created($"/products/{productId}/reviews", created);
+});
+
+app.MapDelete("/products/{productId}/reviews/{reviewId}/users/{userId}", async (
+    ReviewRepository reviews,
+    UserRepository users,
+    int productId,
+    int reviewId,
+    int userId) =>
+{
+    if (userId <= 0 || reviewId <= 0)
+    {
+        return Results.BadRequest("User and review are required.");
+    }
+
+    var user = await users.GetById(userId);
+
+    if (user == null)
+    {
+        return Results.NotFound("User not found.");
+    }
+
+    if (!string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase))
+    {
+        return Results.Forbid();
+    }
+
+    var result = await reviews.DeleteOwnReview(productId, reviewId, user);
+
+    return result switch
+    {
+        ReviewDeleteResult.Deleted => Results.Ok(),
+        ReviewDeleteResult.Forbidden => Results.Forbid(),
+        _ => Results.NotFound("Review not found.")
+    };
 });
 
 app.MapPost("/products", async (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './CustomerHome.css';
 import LoginModal from './LoginModal';
+import ProductDetailModal from './ProductDetailModal';
 import { useCart } from './CartContext';
 import { apiUrl } from './api';
 
@@ -13,6 +14,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [activePage, setActivePage] = useState("home");
   const [cartMessage, setCartMessage] = useState("");
@@ -177,6 +179,13 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
         onLoginSuccess={handleLoginSuccess}
       />
 
+      <ProductDetailModal
+        product={selectedProduct}
+        isOpen={Boolean(selectedProduct)}
+        onClose={() => setSelectedProduct(null)}
+        user={user}
+      />
+
       {/* MAIN */}
       <main className="customer-main">
 
@@ -217,13 +226,26 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
                 const price = p.basePrice || 0;
 
                 return (
-                  <div key={id} className="product-card">
+                  <div
+                    key={id}
+                    className="product-card"
+                    role="button"
+                    tabIndex="0"
+                    onClick={() => setSelectedProduct(p)}
+                    onKeyDown={(event) => {
+                      if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                        event.preventDefault();
+                        setSelectedProduct(p);
+                      }
+                    }}
+                  >
                     <h3>{p.name}</h3>
                     <p className="brand-tag">{p.brand}</p>
                     <p className="price-tag">€ {Number(price).toFixed(2)}</p>
 
                     <button
-                      onClick={() => {
+                      onClick={(event) => {
+                        event.stopPropagation();
                         handleAddToCart({
                           variantId: id,
                           name: p.name,

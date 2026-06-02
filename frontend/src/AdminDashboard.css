@@ -334,6 +334,10 @@
   background: #f9fafb;
 }
 
+.products-table tbody tr.product-row {
+  cursor: pointer;
+}
+
 .product-name {
   font-weight: 600;
   color: #111827;

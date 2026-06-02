@@ -1,21 +1,31 @@
 {
   "version": 2,
-  "dgSpecHash": "uYPe8oz/VjQ=",
+  "dgSpecHash": "6lunlb2IGPs=",
   "success": true,
-  "projectFilePath": "C:\\Users\\haris_zub3pcb\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj",
+  "projectFilePath": "C:\\Users\\J.D. Groot\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\bcrypt.net-next\\4.1.0\\bcrypt.net-next.4.1.0.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.0\\microsoft.aspnetcore.openapi.10.0.0.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\microsoft.entityframeworkcore\\9.0.0\\microsoft.entityframeworkcore.9.0.0.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\9.0.0\\microsoft.entityframeworkcore.abstractions.9.0.0.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\microsoft.entityframeworkcore.analyzers\\9.0.0\\microsoft.entityframeworkcore.analyzers.9.0.0.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\microsoft.entityframeworkcore.relational\\9.0.0\\microsoft.entityframeworkcore.relational.9.0.0.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\mysqlconnector\\2.5.0\\mysqlconnector.2.5.0.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\pipelines.sockets.unofficial\\2.2.16\\pipelines.sockets.unofficial.2.2.16.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\pomelo.entityframeworkcore.mysql\\9.0.0\\pomelo.entityframeworkcore.mysql.9.0.0.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\stackexchange.redis\\2.13.1\\stackexchange.redis.2.13.1.nupkg.sha512",
-    "C:\\Users\\haris_zub3pcb\\.nuget\\packages\\system.io.hashing\\10.0.2\\system.io.hashing.10.0.2.nupkg.sha512"
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\bcrypt.net-next\\4.1.0\\bcrypt.net-next.4.1.0.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.0\\microsoft.aspnetcore.openapi.10.0.0.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\microsoft.entityframeworkcore\\9.0.0\\microsoft.entityframeworkcore.9.0.0.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\9.0.0\\microsoft.entityframeworkcore.abstractions.9.0.0.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\microsoft.entityframeworkcore.analyzers\\9.0.0\\microsoft.entityframeworkcore.analyzers.9.0.0.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\microsoft.entityframeworkcore.relational\\9.0.0\\microsoft.entityframeworkcore.relational.9.0.0.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\mysqlconnector\\2.5.0\\mysqlconnector.2.5.0.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\pipelines.sockets.unofficial\\2.2.16\\pipelines.sockets.unofficial.2.2.16.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\pomelo.entityframeworkcore.mysql\\9.0.0\\pomelo.entityframeworkcore.mysql.9.0.0.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\stackexchange.redis\\2.13.1\\stackexchange.redis.2.13.1.nupkg.sha512",
+    "C:\\Users\\J.D. Groot\\.nuget\\packages\\system.io.hashing\\10.0.2\\system.io.hashing.10.0.2.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Problem reading the cache file C:\\Users\\J.D. Groot\\Documents\\GitHub\\Project-UP\\backend\\obj\\project.nuget.cache : '<' is an invalid start of a property name. Expected a '\"'. Path: $ | LineNumber: 2 | BytePositionInLine: 0.",
+      "projectPath": "C:\\Users\\J.D. Groot\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\J.D. Groot\\Documents\\GitHub\\Project-UP\\backend\\backend.csproj",
+      "targetGraphs": []
+    }
+  ]
 }

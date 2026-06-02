@@ -31,6 +31,15 @@ public class ProductRepository
                 p.IsActive,
                 p.StockQuantity,
                 (
+                    SELECT pv.PictureUrl
+                    FROM ProductVariants pv
+                    WHERE pv.ProductId = p.ProductId
+                        AND pv.PictureUrl IS NOT NULL
+                        AND pv.PictureUrl <> ''
+                    ORDER BY pv.ProductVariantId
+                    LIMIT 1
+                ) AS ImageUrl,
+                (
                     SELECT col.Name
                     FROM ProductVariants pv
                     JOIN Colors col ON pv.ColorId = col.ColorId
@@ -68,6 +77,7 @@ public class ProductRepository
                 CategoryName = reader["CategoryName"].ToString() ?? "",
                 IsActive = Convert.ToBoolean(reader["IsActive"]),
                 StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
+                ImageUrl = reader["ImageUrl"] == DBNull.Value ? null : reader["ImageUrl"].ToString(),
                 ColorName = reader["ColorName"]?.ToString(),
                 SizeName = reader["SizeName"]?.ToString()
             });
@@ -93,6 +103,15 @@ public class ProductRepository
                 c.Name AS CategoryName,
                 p.IsActive,
                 p.StockQuantity,
+                (
+                    SELECT pv.PictureUrl
+                    FROM ProductVariants pv
+                    WHERE pv.ProductId = p.ProductId
+                        AND pv.PictureUrl IS NOT NULL
+                        AND pv.PictureUrl <> ''
+                    ORDER BY pv.ProductVariantId
+                    LIMIT 1
+                ) AS ImageUrl,
                 (
                     SELECT col.Name
                     FROM ProductVariants pv
@@ -134,6 +153,7 @@ public class ProductRepository
                 CategoryName = reader["CategoryName"].ToString() ?? "",
                 IsActive = Convert.ToBoolean(reader["IsActive"]),
                 StockQuantity = Convert.ToInt32(reader["StockQuantity"]),
+                ImageUrl = reader["ImageUrl"] == DBNull.Value ? null : reader["ImageUrl"].ToString(),
                 ColorName = reader["ColorName"]?.ToString(),
                 SizeName = reader["SizeName"]?.ToString()
             };

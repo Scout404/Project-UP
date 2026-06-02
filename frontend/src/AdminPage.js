@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AdminDashboard.css';
+import ProductDetailModal from './ProductDetailModal';
 import { apiUrl } from './api';
 
 function AdminPanel({ user, onLogout }) {
@@ -20,6 +21,7 @@ function AdminPanel({ user, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState('add');
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Fetch categories and products
   useEffect(() => {
@@ -412,7 +414,11 @@ function AdminPanel({ user, onLogout }) {
                   </thead>
                   <tbody>
                     {products.map(product => (
-                      <tr key={product.productId}>
+                      <tr
+                        key={product.productId}
+                        className="product-row"
+                        onClick={() => setSelectedProduct(product)}
+                      >
                         <td className="product-name">{product.name}</td>
                         <td>{product.brand}</td>
                         <td>
@@ -434,7 +440,10 @@ function AdminPanel({ user, onLogout }) {
                         <td>
                           <button
                             className={`status-btn ${product.isActive ? 'active' : 'inactive'}`}
-                            onClick={() => toggleProductStatus(product)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleProductStatus(product);
+                            }}
                             title={product.isActive ? 'Click to deactivate' : 'Click to activate'}
                           >
                             {product.isActive ? '✓ Active' : '✗ Inactive'}
@@ -443,14 +452,20 @@ function AdminPanel({ user, onLogout }) {
                         <td className="actions-cell">
                           <button
                             className="edit-btn"
-                            onClick={() => handleEditProduct(product)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleEditProduct(product);
+                            }}
                             title="Edit product"
                           >
                             ✏️
                           </button>
                           <button
                             className="delete-btn"
-                            onClick={() => handleDeleteProduct(product.productId)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDeleteProduct(product.productId);
+                            }}
                             title="Delete product"
                           >
                             🗑️
@@ -472,6 +487,13 @@ function AdminPanel({ user, onLogout }) {
           {message}
         </div>
       )}
+
+      <ProductDetailModal
+        product={selectedProduct}
+        isOpen={Boolean(selectedProduct)}
+        onClose={() => setSelectedProduct(null)}
+        user={user}
+      />
 
       {/* FOOTER */}
       <footer className="admin-footer">
