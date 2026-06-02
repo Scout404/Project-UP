@@ -12,7 +12,9 @@ function AdminPanel({ user, onLogout }) {
     basePrice: '',
     categoryId: '',
     isActive: true,
-    stockQuantity: 0
+    stockQuantity: 0,
+    colorName: '',
+    sizeName: ''
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -81,7 +83,9 @@ function AdminPanel({ user, onLogout }) {
           basePrice: parseFloat(formData.basePrice),
           categoryId: parseInt(formData.categoryId),
           isActive: formData.isActive,
-          stockQuantity: formData.stockQuantity
+          stockQuantity: parseInt(formData.stockQuantity, 10) || 0,
+          colorName: formData.colorName.trim(),
+          sizeName: formData.sizeName.trim()
         })
       });
 
@@ -93,7 +97,9 @@ function AdminPanel({ user, onLogout }) {
           basePrice: '',
           categoryId: '',
           isActive: true,
-          stockQuantity: 0
+          stockQuantity: 0,
+          colorName: '',
+          sizeName: ''
         });
         setEditingId(null);
         setActiveTab('list');
@@ -116,7 +122,9 @@ function AdminPanel({ user, onLogout }) {
       basePrice: product.basePrice,
       categoryId: product.categoryId,
       isActive: product.isActive,
-      stockQuantity: product.stockQuantity
+      stockQuantity: product.stockQuantity,
+      colorName: product.colorName || '',
+      sizeName: product.sizeName || ''
     });
     setEditingId(product.productId);
     setActiveTab('add');
@@ -131,7 +139,9 @@ function AdminPanel({ user, onLogout }) {
       basePrice: '',
       categoryId: '',
       isActive: true,
-      stockQuantity: 0
+      stockQuantity: 0,
+      colorName: '',
+      sizeName: ''
     });
     setEditingId(null);
     setMessage('');
@@ -318,6 +328,32 @@ function AdminPanel({ user, onLogout }) {
                 />
               </div>
 
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="colorName">Color</label>
+                  <input
+                    type="text"
+                    id="colorName"
+                    name="colorName"
+                    value={formData.colorName}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Black"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="sizeName">Size</label>
+                  <input
+                    type="text"
+                    id="sizeName"
+                    name="sizeName"
+                    value={formData.sizeName}
+                    onChange={handleInputChange}
+                    placeholder="e.g., M"
+                  />
+                </div>
+              </div>
+
               <div className="form-group checkbox">
                 <input
                   type="checkbox"
@@ -367,6 +403,7 @@ function AdminPanel({ user, onLogout }) {
                       <th>Name</th>
                       <th>Brand</th>
                       <th>Category</th>
+                      <th>Variant</th>
                       <th>Price</th>
                       <th>Stock</th>
                       <th>Status</th>
@@ -381,6 +418,11 @@ function AdminPanel({ user, onLogout }) {
                         <td>
                           <span className="category-badge">
                             {getCategoryName(product.categoryId)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="variant-summary">
+                            {[product.colorName, product.sizeName].filter(Boolean).join(' / ') || 'default'}
                           </span>
                         </td>
                         <td className="price">€ {Number(product.basePrice).toFixed(2)}</td>
