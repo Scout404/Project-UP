@@ -22,6 +22,7 @@ builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<CartRepository>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<SearchFunction>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -259,11 +260,27 @@ app.MapDelete("/cart/remove/{userId}/{variantId}", async ( CartService service, 
 });
 
 // SEARCH FUNCTION
-app.MapGet("/searchFunc", (string? searchedProduct, int? categoryId, string? brand, 
-    decimal? minPrice, decimal? maxPrice, int? colorId, int? sizeId) =>
+app.MapGet("/searchFunc",
+async (
+    SearchFunction search,
+    string? searchedProduct,
+    int? categoryId,
+    string? brand,
+    decimal? minPrice,
+    decimal? maxPrice,
+    string? colorName,
+    string? sizeName) =>
 {
-    var search = new SearchFunction();
-    return search.Search(searchedProduct, categoryId, brand, minPrice, maxPrice, colorId, sizeId);
+    var result = await search.Search(
+        searchedProduct,
+        categoryId,
+        brand,
+        minPrice,
+        maxPrice,
+        colorName,
+        sizeName);
+
+    return Results.Ok(result);
 });
 
 // DEBUG ENDPOINTS
