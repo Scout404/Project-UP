@@ -160,6 +160,19 @@ public class ProductService
         return true;
     }
 
+    public async Task<bool> SetImage(int productId, string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+            return false;
+
+        var success = await _products.SetImage(productId, imageUrl.Trim());
+        if (!success)
+            return false;
+
+        await ClearProductsCache();
+        return true;
+    }
+
     public async Task<bool> AddStock(int productId, int amount)
     {
         if (amount <= 0)
