@@ -106,6 +106,16 @@
   animation: slideIn 0.3s ease;
 }
 
+/* SEARCH adjust */
+.search-input {
+  position: relative;
+  z-index: 10;
+  background: white;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+
 .message.success {
   background: #f0fdf4;
   border: 1px solid #86efac;

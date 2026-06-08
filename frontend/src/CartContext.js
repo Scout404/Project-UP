@@ -125,6 +125,24 @@ export function CartProvider({ children, user }) {
     }
   };
 
+  // clear cart after check out
+  const clearCart = async () => {
+    setCart({ items: [] });
+
+    if (!userId) {
+      localStorage.removeItem(GUEST_CART_KEY);
+      return;
+    }
+
+    try {
+      await fetch(apiUrl(`/cart/clear/${userId}`), {
+        method: "DELETE"
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const removeFromCart = async (variantId) => {
     if (!userId) {
       setCart((currentCart) => {
@@ -138,6 +156,7 @@ export function CartProvider({ children, user }) {
 
       return;
     }
+
 
     console.log(`[CART DEBUG] DELETE /cart/remove/${userId}/${variantId}`);
 
@@ -158,7 +177,7 @@ export function CartProvider({ children, user }) {
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
       {children}
     </CartContext.Provider>
   );

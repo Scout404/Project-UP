@@ -283,4 +283,23 @@ public class CartRepository
 
         return rows > 0;
     }
+
+    public async Task ClearCart(int userId)
+    {
+        using var conn = new MySqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        string sql = @"
+            DELETE FROM CartItems WHERE CartId IN (
+                SELECT CartId
+                FROM Cart
+                WHERE UserId = @userId
+            )
+        ";
+
+        using var command = new MySqlCommand(sql, conn);
+        command.Parameters.AddWithValue("@userId", userId);
+
+        await command.ExecuteNonQueryAsync();
+    }
 }

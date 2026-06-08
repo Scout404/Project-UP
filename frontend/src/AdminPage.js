@@ -23,6 +23,11 @@ function AdminPanel({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('add');
   const [selectedProduct, setSelectedProduct] = useState(null);
 
+  // search
+  const [searchQuery, setSearchQuery] = useState("");
+
+
+
   // Fetch categories and products
   useEffect(() => {
     fetchCategories();
@@ -204,6 +209,16 @@ function AdminPanel({ user, onLogout }) {
   const isErrorMessage = message.startsWith('Failed') ||
     message.startsWith('Error') ||
     message.startsWith('Please');
+
+  
+  // search
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    const filteredProducts = products.filter(product => {
+      if (!normalizedSearch) return true;
+
+      return (product.name?.toLowerCase().includes(normalizedSearch) ||product.brand?.toLowerCase().includes(normalizedSearch) ||product.categoryName?.toLowerCase().includes(normalizedSearch));
+    });
 
   return (
     <div className="admin-panel">
@@ -394,6 +409,13 @@ function AdminPanel({ user, onLogout }) {
         {activeTab === 'list' && (
           <section className="admin-section products-list-section">
             <h2>All Products</h2>
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
 
             {products.length === 0 ? (
               <p className="no-products">No products yet. Add one to get started!</p>
@@ -413,7 +435,7 @@ function AdminPanel({ user, onLogout }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map(product => (
+                    {filteredProducts.map(product => (
                       <tr
                         key={product.productId}
                         className="product-row"
