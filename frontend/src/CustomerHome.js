@@ -187,16 +187,8 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
           throw new Error(message);
       }
 
-      // download txt file with info
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "order.txt";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const data = await res.json();
+      alert(data.message || "Order placed. The receipt was written to backend/OrderReceipts/orders.txt");
 
       //clear
       clearCart();
@@ -214,7 +206,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
       setShowCheckout(false);
 
     } catch (err) {
-      alert(err.Message);
+      alert(err.message);
     } finally {
       setLoading(false);
       setProgress(0);

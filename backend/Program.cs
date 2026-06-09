@@ -229,6 +229,13 @@ app.MapGet("/admin/product-images", () =>
     return Results.Ok(images);
 });
 
+app.MapGet("/admin/orders", async (CheckoutRepository checkoutRepository) =>
+{
+    var orders = await checkoutRepository.GetOrders();
+
+    return Results.Ok(orders);
+});
+
 app.MapPut("/products/{id}/image", async (
     ProductService service,
     int id,
@@ -450,8 +457,11 @@ app.MapPost("/checkout", async (CheckoutService service,CheckoutRequest request
     }
         
 
-    return Results.File(result.Receipt!,"text/plain",$"order_{DateTime.UtcNow.Ticks}.txt"
-    );
+    return Results.Ok(new
+    {
+        message = "Order placed and written to backend/OrderReceipts/orders.txt",
+        receiptFilePath = service.ReceiptFilePath
+    });
 });
 
 // ADD TO WISHLIST 
@@ -655,8 +665,6 @@ static async Task ExecuteNonQuery(string connectionString, string sql, Action<My
     await command.ExecuteNonQueryAsync();
 }
 
-<<<<<<< HEAD
-=======
 static bool IsSupportedProductImage(string path)
 {
     var extension = Path.GetExtension(path);
@@ -691,4 +699,3 @@ static bool TryGetProductImageFilePath(string productImagesPath, string imageUrl
     return imagePath.StartsWith(productImagesPath, StringComparison.OrdinalIgnoreCase) &&
         IsSupportedProductImage(imagePath);
 }
->>>>>>> main

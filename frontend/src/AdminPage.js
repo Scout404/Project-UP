@@ -18,6 +18,7 @@ function resolveAssetUrl(url) {
 function AdminPanel({ user, onLogout }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [productImages, setProductImages] = useState([]);
   const [selectedImageUrl, setSelectedImageUrl] = useState('');
   const [draggingImageUrl, setDraggingImageUrl] = useState('');
@@ -41,6 +42,7 @@ function AdminPanel({ user, onLogout }) {
 
   // search
   const [searchQuery, setSearchQuery] = useState("");
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
 
 
 
@@ -48,6 +50,7 @@ function AdminPanel({ user, onLogout }) {
   useEffect(() => {
     fetchCategories();
     fetchProducts();
+    fetchOrders();
     fetchProductImages();
   }, []);
 
@@ -78,6 +81,16 @@ function AdminPanel({ user, onLogout }) {
       setProductImages(data);
     } catch (err) {
       console.error('Failed to fetch product images:', err);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch(apiUrl('/admin/orders'));
+      const data = await response.json();
+      setOrders(data);
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
     }
   };
 
@@ -285,6 +298,35 @@ function AdminPanel({ user, onLogout }) {
       return (product.name?.toLowerCase().includes(normalizedSearch) ||product.brand?.toLowerCase().includes(normalizedSearch) ||product.categoryName?.toLowerCase().includes(normalizedSearch));
     });
 
+    const normalizedOrderSearch = orderSearchQuery.trim().toLowerCase();
+
+    const filteredOrders = orders.filter(order => {
+      if (!normalizedOrderSearch) return true;
+
+      const searchableOrderText = [
+        `#${order.orderId}`,
+        String(order.orderId),
+        order.customerName,
+        order.email,
+        order.street,
+        order.city,
+        order.postalCode,
+        order.country,
+        order.status,
+        Number(order.totalPrice).toFixed(2),
+        ...(order.items || []).flatMap(item => [
+          item.name,
+          String(item.quantity),
+          Number(item.price).toFixed(2)
+        ])
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchableOrderText.includes(normalizedOrderSearch);
+    });
+
   return (
     <div className="admin-panel">
       {/* HEADER */}
@@ -318,6 +360,15 @@ function AdminPanel({ user, onLogout }) {
             onClick={() => setActiveTab('images')}
           >
             Images ({productImages.length})
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('orders');
+              fetchOrders();
+            }}
+          >
+            Orders ({orders.length})
           </button>
         </div>
       </header>
@@ -648,6 +699,80 @@ function AdminPanel({ user, onLogout }) {
                 ))}
               </div>
             </div>
+          </section>
+        )}
+
+        {activeTab === 'orders' && (
+          <section className="admin-section orders-section">
+            <div className="section-heading-row">
+              <h2>Orders</h2>
+              <button type="button" className="cancel-btn small" onClick={fetchOrders}>
+                Refresh
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Search orders..."
+              value={orderSearchQuery}
+              onChange={(e) => setOrderSearchQuery(e.target.value)}
+              className="search-input"
+            />
+
+            {orders.length === 0 ? (
+              <p className="no-products">No orders yet.</p>
+            ) : filteredOrders.length === 0 ? (
+              <p className="no-products">No orders match your search.</p>
+            ) : (
+              <div className="products-table-wrapper">
+                <table className="products-table orders-table">
+                  <thead>
+                    <tr>
+                      <th>Order</th>
+                      <th>Date</th>
+                      <th>Customer</th>
+                      <th>Address</th>
+                      <th>Items</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.map(order => (
+                      <tr key={order.orderId}>
+                        <td className="product-name">#{order.orderId}</td>
+                        <td>{new Date(order.orderDate).toLocaleString()}</td>
+                        <td>
+                          <div className="order-customer">
+                            <strong>{order.customerName || 'Unknown customer'}</strong>
+                            <span>{order.email}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="order-address">
+                            {[order.street, order.postalCode, order.city, order.country]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="order-items">
+                            {(order.items || []).map((item, index) => (
+                              <span key={`${order.orderId}-${index}`}>
+                                {item.name} x{item.quantity}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="price">€ {Number(order.totalPrice).toFixed(2)}</td>
+                        <td>
+                          <span className="status-btn active">{order.status}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         )}
       </main>
