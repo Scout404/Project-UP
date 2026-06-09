@@ -1,5 +1,7 @@
 Using launch settings from backend\Properties\launchSettings.json...
 Building...
+C:\Program Files\dotnet\sdk\10.0.201\NuGet.targets(196,5): warning : Problem reading the cache file C:\Users\J.D. Groot\Documents\GitHub\Project-UP\backend\obj\project.nuget.cache : '<' is an invalid start of a property name. Expected a '"'. Path: $ | LineNumber: 2 | BytePositionInLine: 0. [C:\Users\J.D. Groot\Documents\GitHub\Project-UP\backend\backend.csproj]
+C:\Users\J.D. Groot\Documents\GitHub\Project-UP\backend\backend.csproj : warning Undefined: Problem reading the cache file C:\Users\J.D. Groot\Documents\GitHub\Project-UP\backend\obj\project.nuget.cache : '<' is an invalid start of a property name. Expected a '"'. Path: $ | LineNumber: 2 | BytePositionInLine: 0.
 info: Microsoft.Hosting.Lifetime[14]
       Now listening on: http://0.0.0.0:5050
 info: Microsoft.Hosting.Lifetime[0]
