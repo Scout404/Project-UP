@@ -126,6 +126,10 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
     }, 1800);
   };
 
+  const openProductDetails = (product) => {
+    setSelectedProduct(product);
+  };
+
   // checkout logic
   const handleCheckout = async () => {
     if (email && !email.includes("@")) 
@@ -449,11 +453,11 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
                     className="product-card"
                     role="button"
                     tabIndex="0"
-                    onClick={() => setSelectedProduct(p)}
+                    onClick={() => openProductDetails(p)}
                     onKeyDown={(event) => {
                       if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
                         event.preventDefault();
-                        setSelectedProduct(p);
+                        openProductDetails(p);
                       }
                     }}
                   >
@@ -591,13 +595,33 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
               return (
                 <div
                   key={product.productId}
-                  style={{ display: "flex", justifyContent: "space-between" }}
+                  role="button"
+                  tabIndex="0"
+                  onClick={() => {
+                    setShowWishlist(false);
+                    openProductDetails(product);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault();
+                      setShowWishlist(false);
+                      openProductDetails(product);
+                    }
+                  }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    cursor: "pointer"
+                  }}
                 >
                   <span>{product.name}</span>
 
                   <button
                   className="primary-btn"
-                  onClick={() => toggleWishlist(product.productId)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggleWishlist(product.productId);
+                  }}
                 >
                   Remove
                 </button>
