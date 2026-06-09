@@ -47,9 +47,19 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 var frontendBuildPath = Path.GetFullPath(
     Path.Combine(app.Environment.ContentRootPath, "..", "frontend", "build"));
+var productImagesPath = Path.GetFullPath(
+    Path.Combine(app.Environment.ContentRootPath, "ProductImages"));
+
+Directory.CreateDirectory(productImagesPath);
 
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(productImagesPath),
+    RequestPath = "/product-images"
+});
 
 if (Directory.Exists(frontendBuildPath))
 {
@@ -191,6 +201,60 @@ app.MapGet("/products/{id}", async (ProductService service, int id) =>
         return Results.NotFound();
 
     return Results.Ok(product);
+});
+
+app.MapGet("/admin/product-images", () =>
+{
+    var images = Directory
+        .EnumerateFiles(productImagesPath)
+        .Where(IsSupportedProductImage)
+        .Select(path =>
+        {
+            var fileInfo = new FileInfo(path);
+            var fileName = Path.GetFileName(path);
+
+            return new
+            {
+                fileName,
+                displayName = Path.GetFileNameWithoutExtension(path),
+                url = $"/product-images/{Uri.EscapeDataString(fileName)}",
+                sizeInBytes = fileInfo.Length,
+                lastModifiedUtc = fileInfo.LastWriteTimeUtc
+            };
+        })
+        .OrderByDescending(image => image.lastModifiedUtc)
+        .ThenBy(image => image.fileName)
+        .ToList();
+
+    return Results.Ok(images);
+});
+
+app.MapPut("/products/{id}/image", async (
+    ProductService service,
+    int id,
+    ProductImageUpdateRequest request) =>
+{
+    var imageUrl = request.ImageUrl?.Trim();
+
+    if (string.IsNullOrWhiteSpace(imageUrl))
+    {
+        return Results.BadRequest("Image URL is required.");
+    }
+
+    if (!TryGetProductImageFilePath(productImagesPath, imageUrl, out var imagePath) ||
+        !File.Exists(imagePath))
+    {
+        return Results.BadRequest("Choose an image from the product image folder.");
+    }
+
+    var updated = await service.SetImage(id, imageUrl);
+
+    if (!updated)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok();
 });
 
 app.MapGet("/products/{productId}/reviews", async (ReviewRepository reviews, int productId) =>
@@ -591,3 +655,40 @@ static async Task ExecuteNonQuery(string connectionString, string sql, Action<My
     await command.ExecuteNonQueryAsync();
 }
 
+<<<<<<< HEAD
+=======
+static bool IsSupportedProductImage(string path)
+{
+    var extension = Path.GetExtension(path);
+
+    return extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+        extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+        extension.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+        extension.Equals(".webp", StringComparison.OrdinalIgnoreCase) ||
+        extension.Equals(".gif", StringComparison.OrdinalIgnoreCase);
+}
+
+static bool TryGetProductImageFilePath(string productImagesPath, string imageUrl, out string imagePath)
+{
+    imagePath = "";
+    const string requestPath = "/product-images/";
+
+    if (!imageUrl.StartsWith(requestPath, StringComparison.OrdinalIgnoreCase))
+    {
+        return false;
+    }
+
+    var fileName = Uri.UnescapeDataString(imageUrl[requestPath.Length..]);
+
+    if (string.IsNullOrWhiteSpace(fileName) ||
+        fileName != Path.GetFileName(fileName) ||
+        fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+    {
+        return false;
+    }
+
+    imagePath = Path.GetFullPath(Path.Combine(productImagesPath, fileName));
+    return imagePath.StartsWith(productImagesPath, StringComparison.OrdinalIgnoreCase) &&
+        IsSupportedProductImage(imagePath);
+}
+>>>>>>> main

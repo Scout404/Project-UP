@@ -5,6 +5,20 @@ import ProductDetailModal from './ProductDetailModal';
 import { useCart } from './CartContext';
 import { apiUrl } from './api';
 
+function resolveImageUrl(product) {
+  const imageUrl = product?.imageUrl || product?.image || product?.productImage || product?.pictureUrl;
+
+  if (!imageUrl) {
+    return '';
+  }
+
+  if (/^(https?:|data:|blob:)/i.test(imageUrl)) {
+    return imageUrl;
+  }
+
+  return apiUrl(imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`);
+}
+
 function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const categories = ['home', 'clothes', 'accessoires', 'collections'];
   const links = ['contact', 'about us', 'support'];
@@ -451,6 +465,13 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
                       }
                     }}
                   >
+                    <div className="product-card-media">
+                      {resolveImageUrl(p) ? (
+                        <img src={resolveImageUrl(p)} alt={p.name} />
+                      ) : (
+                        <span>Coming Soon</span>
+                      )}
+                    </div>
                     <h3>{p.name}</h3>
                     <p className="brand-tag">{p.brand}</p>
                     <p className="price-tag">€ {Number(price).toFixed(2)}</p>
