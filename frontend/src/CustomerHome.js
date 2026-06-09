@@ -24,7 +24,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const links = ['contact', 'about us', 'support'];
   const isLoggedIn = Boolean(user && !user.isGuest);
 
-  const { cart, addToCart, removeFromCart } = useCart();
+  const { cart, addToCart, removeFromCart, clearCart} = useCart();
 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -36,6 +36,29 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef(null);
 
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+
+  // loading bar payment
+  const [progress, setProgress] = useState(0);
+
+  // checkout info form
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Apple Pay");
+
+  const [wishlist, setWishlist] = useState([]);
+  const [showWishlist, setShowWishlist] = useState(false);
+
+  const [page, setPage] = useState("home");
+
+
   useEffect(() => {
     fetch(apiUrl("/products"))
       .then(res => res.json())
@@ -46,6 +69,16 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
   useEffect(() => {
     return () => window.clearTimeout(cartMessageTimerRef.current);
   }, []);
+
+  // wishlist after youre logged in
+  useEffect(() => {
+    if (!user?.id) return;
+
+    fetch(apiUrl(`/wishlist/${user.id}`))
+      .then(res => res.json())
+      .then(setWishlist)
+      .catch(err => console.error(err));
+  }, [user]);
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
   const isSearching = normalizedSearchQuery.length > 0;
@@ -93,6 +126,120 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
     }, 1800);
   };
 
+  // checkout logic
+  const handleCheckout = async () => {
+    if (email && !email.includes("@")) 
+    {
+      alert("Invalid email");
+      return;
+    }
+
+    if (!cart?.items || cart.items.length === 0) 
+    {
+      alert("Cart is empty");
+      return;
+    }
+
+    setLoading(true);
+    setProgress(0);
+
+    // 5 second payment screen
+    let percent = 0;
+
+    const interval = setInterval(() => 
+    {
+      percent += 2;
+      setProgress(percent);
+
+      if (percent >= 100) 
+      {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    try {
+      await new Promise((res) => setTimeout(res, 5000));
+
+      const res = await fetch(apiUrl("/checkout"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          FirstName: firstName,
+          LastName: lastName,
+          Email: email,
+          Street: street,
+          City: city,
+          PostalCode: postalCode,
+          Country: country,
+          PaymentMethod: paymentMethod,
+          Items: cart.items.map(item => ({
+          VariantId: item.variantId,
+          Name: item.name,
+          Price: item.price,
+          Quantity: item.quantity
+        }))
+        })
+      });
+
+      if (!res.ok)
+      {
+          const message = await res.text();
+          throw new Error(message);
+      }
+
+      const data = await res.json();
+      alert(data.message || "Order placed. The receipt was written to backend/OrderReceipts/orders.txt");
+
+      //clear
+      clearCart();
+
+      // and clear user info after checking out
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setStreet("");
+      setCity("");
+      setPostalCode("");
+      setCountry("");
+      setPaymentMethod("");
+
+      setShowCheckout(false);
+
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+      setProgress(0);
+    }
+  };
+
+
+  // Toggle wishlist logic 
+  const toggleWishlist = async (productId) => {
+    if (!user?.id) {
+      alert("Login required");
+      return;
+    }
+
+    const url = apiUrl(`/wishlist/${user.id}/${productId}`);
+    const isInWishlist = wishlist.includes(productId);
+
+    await fetch(url, {
+      method: isInWishlist ? "DELETE" : "POST"
+    });
+
+    setWishlist(prev => {
+      if (prev.includes(productId)) {
+        // remove 
+        return prev.filter(id => id !== productId);
+      }
+      // add 
+      return prev.concat(productId);
+    });
+  };
+
+
+
   return (
     <div className="customer-home">
 
@@ -106,6 +253,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
                 key={category}
                 onClick={() => {
                   setActivePage(category);
+                  setPage("home");
                   if (category === "home") {
                     setSearchQuery("");
                   }
@@ -141,7 +289,14 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
                 className="search-input"
               />
             </form>
-            <button className="icon-btn">❤️</button>
+            {/* <button className="icon-btn">❤️</button> */}
+            <button
+              className="icon-btn"
+              onClick={() => setShowWishlist(true)}
+            >
+              ❤️
+            </button>
+            
 
             <button
               className="icon-btn"
@@ -222,6 +377,55 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
           </section>
         )}
 
+        {/* CONTACT PAGE */}
+        {page === "contact" && (
+          <section className="hero-panel" style={{ padding: "2rem" }}>
+            <div className="hero-copy">
+              <h1>Contact</h1>
+              <p>You can contact us on:</p>
+              <p>Email: info@newlook.com</p>
+
+              <button className="primary-btn" onClick={() => setPage("home")}>
+                Back
+              </button>
+            </div>
+          </section>
+        )}
+        {/* About us PAGE */}
+        {page === "about us" && (
+          <section className="hero-panel" style={{ padding: "2rem" }}>
+            <div className="hero-copy">
+              <h1>About us</h1>
+              <p>Newlook is a global fashion brand that belives in sustainability and style.</p>
+              <p>We believe that good quality clothes can be affordable too!</p>
+
+              <button className="primary-btn" onClick={() => setPage("home")}>
+                Back
+              </button>
+            </div>
+          </section>
+        )}
+        {/* About us PAGE */}
+        {page === "support" && (
+          <section className="hero-panel" style={{ padding: "2rem" }}>
+            <div className="hero-copy">
+              <h1>Support</h1>
+              <h2>FAQ</h2> 
+              <h4>Where is my order?</h4>
+                <p>Orders take between 3-5 days to arrive, using the track and trace code you can follow your order.</p>
+              <h4>Item did not arrive</h4>
+                <p>contact our customer-service.</p>
+
+              <h4>How many days do i have to return an item?</h4>
+                <p>You have 14 days to return an item.</p>
+
+              <button className="primary-btn" onClick={() => setPage("home")}>
+                Back
+              </button>
+            </div>
+          </section>
+        )}
+
         {/* PRODUCTS */}
         {showProducts && (
           <section className="products-grid">
@@ -263,6 +467,16 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
                     <h3>{p.name}</h3>
                     <p className="brand-tag">{p.brand}</p>
                     <p className="price-tag">€ {Number(price).toFixed(2)}</p>
+                      {/* HEART BUTTON */}
+                    <button
+                      className="heart-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleWishlist(id);
+                      }}
+                    >
+                      {wishlist.includes(id) ? "❤️" : "🤍"}
+                    </button>
 
                     <button
                       onClick={(event) => {
@@ -297,55 +511,200 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
       {/* CART */}
       {isCartOpen && (
         <div className="cart-overlay" onClick={() => setIsCartOpen(false)}>
-
           <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
 
-            <h2>Shopping Cart</h2>
+            <h2>Cart</h2>
 
-            {cart?.items?.length === 0 ? (
-              <p>Cart is empty</p>
-            ) : (
-              <>
-                {cart.items.map(item => (
-                  <div key={item.variantId} className="cart-item">
-                    <p>{item.name}</p>
-                    <p>Qty: {item.quantity}</p>
+            {cart.items.map(item => (
+              <div
+                key={item.variantId}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                  gap: "10px"
+                }}
+              >
+                <span>{item.name} x {item.quantity}</span>
 
-                    <p>€ {Number(item.price || 0).toFixed(2)}</p>
+                <button
+                  className="primary-btn"
+                  onClick={() => removeFromCart(item.variantId)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
 
-                    <button onClick={() => removeFromCart(item.variantId)}>
-                      Remove
-                    </button>
-                  </div>
-                ))}
 
-                <hr />
+            <hr />
 
-                <h3>
-                  Total: € {totalPrice.toFixed(2)}
-                </h3>
-              </>
-            )}
+            {/* total price */}
+            <h3>
+              Total: € {totalPrice.toFixed(2)}
+            </h3>
 
-            <button onClick={() => setIsCartOpen(false)}>
+            <hr />
+
+            {/* checkout button */}
+            <button
+              className="primary-btn"
+              onClick={() => {
+                if (!cart?.items || cart.items.length === 0) {
+                  alert("Your cart is empty");
+                  return;
+                }
+                setShowCheckout(true);
+              }}
+            >
+              Checkout
+            </button>
+
+            <button
+              className="primary-btn"
+              onClick={() => setIsCartOpen(false)}
+            >
               Close
             </button>
 
           </div>
         </div>
       )}
+      {/* WISHLIST overlay */}
+      {showWishlist && (
+        <div className="cart-overlay" onClick={() => setShowWishlist(false)}>
+          <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
 
-      {/* FOOTER */}
+            <h2>Wishlist</h2>
+
+            {/* Loop through all products */}
+            {products.map(product => {
+
+              // Check if this product is in the wishlist
+              const isInWishlist = wishlist.includes(product.productId);
+              // Only show it if it's in the wishlist
+              if (!isInWishlist) 
+              {
+                return null; 
+              }
+              return (
+                <div
+                  key={product.productId}
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <span>{product.name}</span>
+
+                  <button
+                  className="primary-btn"
+                  onClick={() => toggleWishlist(product.productId)}
+                >
+                  Remove
+                </button>
+                </div>
+              );
+            })}
+
+            {wishlist.length === 0 && (
+              <p>No items in wishlist</p>
+            )}
+
+            <button
+              className="primary-btn"
+              onClick={() => setShowWishlist(false)}
+            >
+              Close
+            </button>
+
+
+          </div>
+        </div>
+      )}
+
+
+      {/* checkout */}
+      {showCheckout && (
+        <div className="cart-overlay" onClick={() => setShowCheckout(false)}>
+          <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
+
+            <h2>Checkout</h2>
+
+            <input placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} />
+            <input placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} />
+            <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+            <input placeholder="Street" value={street} onChange={e => setStreet(e.target.value)} />
+            <input placeholder="City" value={city} onChange={e => setCity(e.target.value)} />
+            <input placeholder="Postal Code" value={postalCode} onChange={e => setPostalCode(e.target.value)} />
+            <input placeholder="Country" value={country} onChange={e => setCountry(e.target.value)} />
+
+            {/* card options */}
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <option value="APPLE_PAY">Apple Pay</option>
+              <option value="PAYPAL">PayPal</option>
+              <option value="ING">ING</option>
+              <option value="RABOBANK">Rabobank</option>
+              <option value="ABN_AMRO">ABN AMRO</option>
+            </select>
+
+            {/* button */}
+            <button
+              className="primary-btn"
+              disabled={loading}
+              onClick={handleCheckout}
+            >
+              {loading ? "Processing payment..." : "Place Order"}
+            </button>
+
+            <button onClick={() => setShowCheckout(false)}>
+              Cancel
+            </button>
+
+            {/* loading bar screen */}
+            {loading && (
+              <div style={{
+                width: "100%",
+                background: "#eee",
+                height: "10px",
+                marginTop: "10px",
+                borderRadius: "6px"
+              }}>
+                <div
+                  style={{
+                    width: `${progress}%`,
+                    height: "100%",
+                    background: "black",
+                    transition: "width 0.1s"
+                  }}
+                />
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
       <footer className="customer-footer">
         <ul className="footer-links">
           {links.map(link => (
-            <li key={link}>{link}</li>
+            <li
+              key={link}
+              onClick={() => setPage(link)}  
+              style={{ cursor: "pointer" }}
+            >
+              {link}
+            </li>
           ))}
         </ul>
       </footer>
 
+
     </div>
+    
   );
 }
 
 export default CustomerHome;
+

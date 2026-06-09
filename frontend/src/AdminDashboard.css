@@ -106,6 +106,16 @@
   animation: slideIn 0.3s ease;
 }
 
+/* SEARCH adjust */
+.search-input {
+  position: relative;
+  z-index: 10;
+  background: white;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+
 .message.success {
   background: #f0fdf4;
   border: 1px solid #86efac;
@@ -586,6 +596,36 @@
 .image-product-meta span {
   color: #64748b;
   font-size: 0.84rem;
+}
+
+/* ORDERS */
+.orders-table td {
+  vertical-align: top;
+}
+
+.order-customer,
+.order-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.order-customer strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+.order-customer span,
+.order-items span,
+.order-address {
+  color: #64748b;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.order-address {
+  display: inline-block;
+  max-width: 220px;
 }
 
 /* FOOTER */

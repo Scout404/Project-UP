@@ -23,6 +23,10 @@ builder.Services.AddScoped<CartRepository>();
 builder.Services.AddScoped<ReviewRepository>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<CheckoutRepository>();
+builder.Services.AddScoped<CheckoutService>();
+builder.Services.AddScoped<WishlistRepository>();
+builder.Services.AddScoped<WishlistService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -136,6 +140,7 @@ app.MapPost("/login",
         LoginRequest request
     ) =>
 {
+
     var user = await auth.Authenticate(
         request.Username,
         request.Password
@@ -222,6 +227,13 @@ app.MapGet("/admin/product-images", () =>
         .ToList();
 
     return Results.Ok(images);
+});
+
+app.MapGet("/admin/orders", async (CheckoutRepository checkoutRepository) =>
+{
+    var orders = await checkoutRepository.GetOrders();
+
+    return Results.Ok(orders);
 });
 
 app.MapPut("/products/{id}/image", async (
@@ -416,12 +428,61 @@ app.MapDelete("/cart/remove/{userId}/{variantId}", async ( CartService service, 
     }
 });
 
+// clear endpoint for logged in
+app.MapDelete("/cart/clear/{userId}", async (
+    int userId,
+    CartRepository repo) =>
+{
+    await repo.ClearCart(userId);
+
+    return Results.Ok();
+});
+
 // SEARCH FUNCTION
-app.MapGet("/searchFunc", (string? searchedProduct, int? categoryId, string? brand, 
-    decimal? minPrice, decimal? maxPrice, int? colorId, int? sizeId) =>
+app.MapGet("/searchFunc", (string? searchedProduct, int? categoryId, string? brand, decimal? minPrice, decimal? maxPrice, int? colorId, int? sizeId) =>
 {
     var search = new SearchFunction();
     return search.Search(searchedProduct, categoryId, brand, minPrice, maxPrice, colorId, sizeId);
+});
+
+// CHECKOUT FUNCTION
+app.MapPost("/checkout", async (CheckoutService service,CheckoutRequest request
+) =>
+{
+    var result = await service.Checkout(request);
+
+    if (!result.Success)
+    {
+        return Results.BadRequest(result.ErrorMessage ?? "Unknown checkout error");
+    }
+        
+
+    return Results.Ok(new
+    {
+        message = "Order placed and written to backend/OrderReceipts/orders.txt",
+        receiptFilePath = service.ReceiptFilePath
+    });
+});
+
+// ADD TO WISHLIST 
+app.MapPost("/wishlist/{userId}/{productId}", async (WishlistRepository repo,int userId,int productId) =>
+{
+    await repo.Add(userId, productId);
+    return Results.Ok();
+});
+
+// REMOVE FROM WISHLIST 
+app.MapDelete("/wishlist/{userId}/{productId}", async (WishlistRepository repo,int userId,int productId) =>
+{
+    await repo.Remove(userId, productId);
+    return Results.Ok();
+});
+
+// GET WISHLIST 
+app.MapGet("/wishlist/{userId}", async (WishlistRepository repo,int userId) =>
+{
+    var items = await repo.GetWishlistProductIds(userId);
+    return Results.Ok(items);
 });
 
 // DEBUG ENDPOINTS

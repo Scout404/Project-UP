@@ -300,6 +300,7 @@
   background: rgba(0,0,0,0.5);
   display: flex;
   justify-content: flex-end;
+  z-index: 9999;
 }
 
 .cart-drawer {
@@ -308,6 +309,12 @@
   background: white;
   padding: 20px;
   overflow-y: auto;
+
+}
+
+
+.cart-drawer div {
+  margin-bottom: 10px;
 }
 
 /* RESPONSIVE */
