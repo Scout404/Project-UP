@@ -5,9 +5,9 @@ namespace backend.Logic;
 
 public class AuthenticationService
 {
-    private readonly UserRepository _users;
+    private readonly IUserRepository _users;
 
-    public AuthenticationService(UserRepository users)
+    public AuthenticationService(IUserRepository users)
     {
         _users = users;
     }
