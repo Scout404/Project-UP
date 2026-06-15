@@ -17,13 +17,17 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 });
 
 builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<ProductRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<CartRepository>();
 builder.Services.AddScoped<ReviewRepository>();
+builder.Services.AddScoped<IProductCache, RedisProductCache>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<CheckoutRepository>();
+builder.Services.AddScoped<ICheckoutRepository, CheckoutRepository>();
 builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<WishlistRepository>();
 builder.Services.AddScoped<WishlistService>();
