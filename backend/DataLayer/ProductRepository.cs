@@ -2,7 +2,7 @@ using MySqlConnector;
 
 namespace backend.Data;
 
-public class ProductRepository
+public class ProductRepository : IProductRepository
 {
     private readonly string _connectionString;
 

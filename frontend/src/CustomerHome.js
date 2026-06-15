@@ -364,7 +364,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
 
         {/* HOME */}
         {activePage === "home" && (
-          <section className="hero-panel">
+          <section className="hero-panel home-hero" aria-label="Rene Clothes homepage">
             <div className="hero-copy">
               <p className="eyebrow">New look</p>
               <h1>Discover new looks.</h1>

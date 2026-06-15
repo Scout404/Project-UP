@@ -3,7 +3,7 @@ using backend.Models;
 
 namespace backend.Data;
 
-public class CheckoutRepository
+public class CheckoutRepository : ICheckoutRepository
 {
     private readonly string _connectionString;
 

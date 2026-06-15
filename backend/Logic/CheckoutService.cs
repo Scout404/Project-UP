@@ -6,10 +6,10 @@ namespace backend.Logic;
 public class CheckoutService
 {
 
-    private readonly CheckoutRepository _repository;
+    private readonly ICheckoutRepository _repository;
     private readonly string _receiptFilePath;
 
-    public CheckoutService(CheckoutRepository repo, IWebHostEnvironment environment)
+    public CheckoutService(ICheckoutRepository repo, IWebHostEnvironment environment)
     {
         _repository = repo;
         _receiptFilePath = Path.Combine(
