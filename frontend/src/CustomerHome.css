@@ -439,3 +439,30 @@
     padding-top: 0.5rem;
   }
 }
+
+/* open en dichtklappen buttons*/ 
+details {
+  margin-bottom: 1.5rem;  /* extra afstand voor de back button*/ 
+
+}
+
+details summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details summary::marker {
+  display: none;
+}
+
+details summary::before {
+  content: "▶"; /* dicht */
+  display: inline-block;
+  margin-right: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+details[open] summary::before {
+  transform: rotate(90deg); /* open */
+}
+

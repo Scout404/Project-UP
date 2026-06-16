@@ -18,3 +18,21 @@ payment type: Apple Pay
 
 --------------------------------------------------
 
+===== ORDER RECEIPT =====
+Thank you for your order! As soon as your package is on the way you will recieve more info on the delivery date.
+Order date: 09/06/2026 16:19:09
+
+Delivery address:
+efsr efrs
+rgsrthdt@
+qwfegrt efsrgdthr, wetryt 
+
+Your order: 
+Cotton T shirt x1 - €30
+
+TOTAL: €30
+payment type: RABOBANK
+
+
+--------------------------------------------------
+

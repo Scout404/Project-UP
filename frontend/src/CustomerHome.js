@@ -366,8 +366,17 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
         {activePage === "home" && (
           <section className="hero-panel home-hero" aria-label="Rene Clothes homepage">
             <div className="hero-copy">
-              <h1>Rene Clothes</h1>
-              <p className="hero-text">TIMELESS STYLE. MODERN YOU.</p>
+              <p className="eyebrow">New look</p>
+              <h1>Discover new looks.</h1>
+              <p className="hero-text">
+                Explore our latest collection.
+              </p>
+            </div>
+
+            <div className="hero-visual">
+              <div className="hero-image">
+                <span>image</span>
+              </div>
             </div>
           </section>
         )}
@@ -400,19 +409,27 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
             </div>
           </section>
         )}
-        {/* About us PAGE */}
+        {/* support PAGE */}
         {page === "support" && (
           <section className="hero-panel" style={{ padding: "2rem" }}>
             <div className="hero-copy">
               <h1>Support</h1>
-              <h2>FAQ</h2> 
-              <h4>Where is my order?</h4>
-                <p>Orders take between 3-5 days to arrive, using the track and trace code you can follow your order.</p>
-              <h4>Item did not arrive</h4>
-                <p>contact our customer-service.</p>
+              <h2>FAQ</h2>
 
-              <h4>How many days do i have to return an item?</h4>
+              <details>
+                <summary>Where is my order?</summary>
+                <p>Orders take between 3-5 days to arrive, using the track and trace code you can follow your order.</p>
+              </details>
+
+              <details>
+                <summary>Item did not arrive</summary>
+                <p>Contact our customer-service.</p>
+              </details>
+
+              <details>
+                <summary>How many days do I have to return an item?</summary>
                 <p>You have 14 days to return an item.</p>
+              </details>
 
               <button className="primary-btn" onClick={() => setPage("home")}>
                 Back
@@ -420,6 +437,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
             </div>
           </section>
         )}
+
 
         {/* PRODUCTS */}
         {showProducts && (
