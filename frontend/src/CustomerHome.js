@@ -373,11 +373,6 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
               </p>
             </div>
 
-            <div className="hero-visual">
-              <div className="hero-image">
-                <span>image</span>
-              </div>
-            </div>
           </section>
         )}
 
