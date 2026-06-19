@@ -686,8 +686,19 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
               {loading ? "Processing payment..." : "Place Order"}
             </button>
 
-            <button onClick={() => setShowCheckout(false)}>
-              Cancel
+
+            {/* <button
+              className="primary-btn"
+              onClick={() => setIsCartOpen(false)}
+            >
+              Close
+            </button> */}
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => setShowCheckout(false)}
+            >
+              Close
             </button>
 
             {/* loading bar screen */}
