@@ -687,9 +687,16 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
             </button>
 
 
-            <button
+            {/* <button
               className="primary-btn"
               onClick={() => setIsCartOpen(false)}
+            >
+              Close
+            </button> */}
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => setShowCheckout(false)}
             >
               Close
             </button>
