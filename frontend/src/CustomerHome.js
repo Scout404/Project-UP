@@ -5,6 +5,20 @@ import ProductDetailModal from './ProductDetailModal';
 import { useCart } from './CartContext';
 import { apiUrl } from './api';
 
+function resolveImageUrl(product) {
+  const imageUrl = product?.imageUrl || product?.image || product?.productImage || product?.pictureUrl;
+
+  if (!imageUrl) {
+    return '';
+  }
+
+  if (/^(https?:|data:|blob:)/i.test(imageUrl)) {
+    return imageUrl;
+  }
+
+  return apiUrl(imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`);
+}
+
 function CustomerHome({ user, onLogout, onLoginSuccess }) {
   const categories = ['home', 'clothes', 'accessoires', 'collections'];
   const links = ['contact', 'about us', 'support'];
@@ -112,6 +126,10 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
     }, 1800);
   };
 
+  const openProductDetails = (product) => {
+    setSelectedProduct(product);
+  };
+
   // checkout logic
   const handleCheckout = async () => {
     if (email && !email.includes("@")) 
@@ -173,16 +191,8 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
           throw new Error(message);
       }
 
-      // download txt file with info
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "order.txt";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const data = await res.json();
+      alert(data.message || "Order placed. The receipt was written to backend/OrderReceipts/orders.txt");
 
       //clear
       clearCart();
@@ -200,7 +210,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
       setShowCheckout(false);
 
     } catch (err) {
-      alert(err.Message);
+      alert(err.message);
     } finally {
       setLoading(false);
       setProgress(0);
@@ -354,20 +364,15 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
 
         {/* HOME */}
         {activePage === "home" && (
-          <section className="hero-panel">
+          <section className="hero-panel home-hero" aria-label="Rene Clothes homepage">
             <div className="hero-copy">
               <p className="eyebrow">New look</p>
               <h1>Discover new looks.</h1>
               <p className="hero-text">
-                Explore latest collection.
+                Explore our latest collection.
               </p>
             </div>
 
-            <div className="hero-visual">
-              <div className="hero-image">
-                <span>image</span>
-              </div>
-            </div>
           </section>
         )}
 
@@ -399,19 +404,27 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
             </div>
           </section>
         )}
-        {/* About us PAGE */}
+        {/* support PAGE */}
         {page === "support" && (
           <section className="hero-panel" style={{ padding: "2rem" }}>
             <div className="hero-copy">
               <h1>Support</h1>
-              <h2>FAQ</h2> 
-              <h4>Where is my order?</h4>
-                <p>Orders take between 3-5 days to arrive, using the track and trace code you can follow your order.</p>
-              <h4>Item did not arrive</h4>
-                <p>contact our customer-service.</p>
+              <h2>FAQ</h2>
 
-              <h4>How many days do i have to return an item?</h4>
+              <details>
+                <summary>Where is my order?</summary>
+                <p>Orders take between 3-5 days to arrive, using the track and trace code you can follow your order.</p>
+              </details>
+
+              <details>
+                <summary>Item did not arrive</summary>
+                <p>Contact our customer-service.</p>
+              </details>
+
+              <details>
+                <summary>How many days do I have to return an item?</summary>
                 <p>You have 14 days to return an item.</p>
+              </details>
 
               <button className="primary-btn" onClick={() => setPage("home")}>
                 Back
@@ -419,6 +432,7 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
             </div>
           </section>
         )}
+
 
         {/* PRODUCTS */}
         {showProducts && (
@@ -443,14 +457,21 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
                     className="product-card"
                     role="button"
                     tabIndex="0"
-                    onClick={() => setSelectedProduct(p)}
+                    onClick={() => openProductDetails(p)}
                     onKeyDown={(event) => {
                       if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
                         event.preventDefault();
-                        setSelectedProduct(p);
+                        openProductDetails(p);
                       }
                     }}
                   >
+                    <div className="product-card-media">
+                      {resolveImageUrl(p) ? (
+                        <img src={resolveImageUrl(p)} alt={p.name} />
+                      ) : (
+                        <span>Coming Soon</span>
+                      )}
+                    </div>
                     <h3>{p.name}</h3>
                     <p className="brand-tag">{p.brand}</p>
                     <p className="price-tag">€ {Number(price).toFixed(2)}</p>
@@ -578,13 +599,33 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
               return (
                 <div
                   key={product.productId}
-                  style={{ display: "flex", justifyContent: "space-between" }}
+                  role="button"
+                  tabIndex="0"
+                  onClick={() => {
+                    setShowWishlist(false);
+                    openProductDetails(product);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault();
+                      setShowWishlist(false);
+                      openProductDetails(product);
+                    }
+                  }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    cursor: "pointer"
+                  }}
                 >
                   <span>{product.name}</span>
 
                   <button
                   className="primary-btn"
-                  onClick={() => toggleWishlist(product.productId)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggleWishlist(product.productId);
+                  }}
                 >
                   Remove
                 </button>
@@ -645,8 +686,12 @@ function CustomerHome({ user, onLogout, onLoginSuccess }) {
               {loading ? "Processing payment..." : "Place Order"}
             </button>
 
-            <button onClick={() => setShowCheckout(false)}>
-              Cancel
+
+            <button
+              className="primary-btn"
+              onClick={() => setIsCartOpen(false)}
+            >
+              Close
             </button>
 
             {/* loading bar screen */}

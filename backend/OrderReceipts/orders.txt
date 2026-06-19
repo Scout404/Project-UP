@@ -1,0 +1,38 @@
+Order receipts will be appended here after checkout.
+
+===== ORDER RECEIPT =====
+Thank you for your order! As soon as your package is on the way you will recieve more info on the delivery date.
+Order date: 6/9/2026 1:33:16 PM
+
+Delivery address:
+Name name
+none@
+none none, none 
+
+Your order: 
+shirt100 x1 - €80.99
+
+TOTAL: €80.99
+payment type: Apple Pay
+
+
+--------------------------------------------------
+
+===== ORDER RECEIPT =====
+Thank you for your order! As soon as your package is on the way you will recieve more info on the delivery date.
+Order date: 09/06/2026 16:19:09
+
+Delivery address:
+efsr efrs
+rgsrthdt@
+qwfegrt efsrgdthr, wetryt 
+
+Your order: 
+Cotton T shirt x1 - €30
+
+TOTAL: €30
+payment type: RABOBANK
+
+
+--------------------------------------------------
+

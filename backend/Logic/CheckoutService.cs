@@ -1,18 +1,24 @@
 using backend.Models;
 using backend.Data;
-using Microsoft.EntityFrameworkCore;
 using System.Text;
 
 namespace backend.Logic;
 public class CheckoutService
 {
 
-    private readonly CheckoutRepository _repository;
+    private readonly ICheckoutRepository _repository;
+    private readonly string _receiptFilePath;
 
-    public CheckoutService(CheckoutRepository repo)
+    public CheckoutService(ICheckoutRepository repo, IWebHostEnvironment environment)
     {
         _repository = repo;
+        _receiptFilePath = Path.Combine(
+            environment.ContentRootPath,
+            "OrderReceipts",
+            "orders.txt");
     }
+
+    public string ReceiptFilePath => _receiptFilePath;
 
     public async Task<(bool Success, byte[]? Receipt, string? ErrorMessage)> Checkout(CheckoutRequest request)
     {
@@ -72,12 +78,35 @@ public class CheckoutService
             total += item.Price * item.Quantity;
         }
 
+        await _repository.CreateOrder(request, total);
+
         sb.AppendLine();
         sb.AppendLine($"TOTAL: €{total}");
         sb.AppendLine($"payment type: {request.PaymentMethod}");
 
+        await SaveReceipt(sb.ToString());
+
         return (true, Encoding.UTF8.GetBytes(sb.ToString()), null);
     }
+
+    private async Task SaveReceipt(string receiptText)
+    {
+        var directory = Path.GetDirectoryName(_receiptFilePath);
+
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        var entry = new StringBuilder();
+        entry.AppendLine(receiptText);
+        entry.AppendLine();
+        entry.AppendLine("--------------------------------------------------");
+        entry.AppendLine();
+
+        await File.AppendAllTextAsync(_receiptFilePath, entry.ToString(), Encoding.UTF8);
+    }
+
     private byte[] CreateReceiptText(CheckoutRequest request, int productId, int quantity)
     {
         var sb = new StringBuilder();

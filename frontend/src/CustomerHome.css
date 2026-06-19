@@ -11,7 +11,7 @@
 /* MAIN */
 .customer-main {
   flex: 1;
-  padding: 2rem;
+  padding: 0;
 }
 
 /* HEADER */
@@ -131,7 +131,23 @@
   grid-template-columns: 1.2fr 1fr;
   gap: 2rem;
   align-items: center;
-  min-height: calc(100vh - 150px);
+  min-height: calc(100vh - 92px);
+}
+
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: calc(100vh - 92px);
+  padding: clamp(3rem, 8vw, 7rem) clamp(1.5rem, 9vw, 9rem);
+  background:
+    linear-gradient(90deg, rgba(244, 232, 212, 0.84) 0%, rgba(244, 232, 212, 0.58) 38%, rgba(244, 232, 212, 0.04) 70%),
+    url("./assets/rene-clothes-hero.png") center right / cover no-repeat;
+  color: #21170f;
+}
+
+.home-hero .hero-copy {
+  max-width: 760px;
+  align-self: center;
 }
 
 .eyebrow {
@@ -148,12 +164,32 @@
   line-height: 1.02;
 }
 
+.home-hero h1 {
+  max-width: 9ch;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(4.5rem, 8.5vw, 8.6rem);
+  font-weight: 400;
+  line-height: 0.96;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
 .hero-text {
   max-width: 520px;
   margin: 1.5rem 0 2rem;
   color: #475569;
   font-size: 1rem;
   line-height: 1.8;
+}
+
+.home-hero .hero-text {
+  margin: clamp(1.25rem, 2vw, 2rem) 0 0 clamp(0.25rem, 5vw, 4.4rem);
+  max-width: none;
+  color: #2a211b;
+  font-size: clamp(0.9rem, 1.35vw, 1.45rem);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.34em;
 }
 
 .hero-visual {
@@ -179,7 +215,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
-  margin-top: 1rem;
+  padding: 2rem;
+  margin-top: 0;
 }
 
 .products-grid h2 {
@@ -225,6 +262,25 @@
 
 .product-card h3 {
   margin: 0;
+}
+
+.product-card-media {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  background: #f3f4f6;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.product-card-media img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .product-card button:hover {
@@ -305,6 +361,18 @@
     min-height: auto;
   }
 
+  .home-hero {
+    min-height: 72vh;
+    padding: 4rem 1.5rem;
+    background:
+      linear-gradient(90deg, rgba(244, 232, 212, 0.9) 0%, rgba(244, 232, 212, 0.7) 54%, rgba(244, 232, 212, 0.18) 100%),
+      url("./assets/rene-clothes-hero.png") 64% center / cover no-repeat;
+  }
+
+  .home-hero .hero-copy {
+    max-width: 560px;
+  }
+
   .customer-nav {
     flex-wrap: wrap;
     justify-content: center;
@@ -318,7 +386,7 @@
 
 @media (max-width: 600px) {
   .customer-header,
-  .customer-main {
+  .products-grid {
     padding-left: 1rem;
     padding-right: 1rem;
   }
@@ -347,7 +415,54 @@
     font-size: clamp(2.5rem, 8vw, 3.4rem);
   }
 
+  .home-hero {
+    min-height: 68vh;
+    padding: 3.5rem 1.25rem;
+    background:
+      linear-gradient(90deg, rgba(244, 232, 212, 0.94) 0%, rgba(244, 232, 212, 0.78) 62%, rgba(244, 232, 212, 0.32) 100%),
+      url("./assets/rene-clothes-hero.png") 66% center / cover no-repeat;
+  }
+
+  .home-hero h1 {
+    max-width: 8ch;
+    font-size: clamp(3.25rem, 16vw, 5.4rem);
+  }
+
+  .home-hero .hero-text {
+    max-width: 18rem;
+    margin-left: 0.2rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.22em;
+  }
+
   .customer-footer {
     padding-top: 0.5rem;
   }
 }
+
+/* open en dichtklappen buttons*/ 
+details {
+  margin-bottom: 1.5rem;  /* extra afstand voor de back button*/ 
+
+}
+
+details summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details summary::marker {
+  display: none;
+}
+
+details summary::before {
+  content: "▶"; /* dicht */
+  display: inline-block;
+  margin-right: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+details[open] summary::before {
+  transform: rotate(90deg); /* open */
+}
+

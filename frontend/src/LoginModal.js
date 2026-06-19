@@ -141,14 +141,6 @@ function LoginModal({ isOpen, onClose, onLoginSuccess }) {
               : mode === 'login' ? 'Login' : 'Account maken'}
           </button>
         </form>
-
-        {mode === 'login' && (
-          <div className="test-credentials">
-            <p><strong>Test Credentials:</strong></p>
-            <p>Admin: <code>admin</code> / <code>admin123</code></p>
-            <p>Customer: <code>testuser</code> / <code>test123</code></p>
-          </div>
-        )}
       </div>
     </div>
   );

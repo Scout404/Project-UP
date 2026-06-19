@@ -3,9 +3,26 @@ import './AdminDashboard.css';
 import ProductDetailModal from './ProductDetailModal';
 import { apiUrl } from './api';
 
+function resolveAssetUrl(url) {
+  if (!url) {
+    return '';
+  }
+
+  if (/^(https?:|data:|blob:)/i.test(url)) {
+    return url;
+  }
+
+  return apiUrl(url.startsWith('/') ? url : `/${url}`);
+}
+
 function AdminPanel({ user, onLogout }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [productImages, setProductImages] = useState([]);
+  const [selectedImageUrl, setSelectedImageUrl] = useState('');
+  const [draggingImageUrl, setDraggingImageUrl] = useState('');
+  const [assigningProductId, setAssigningProductId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -25,6 +42,7 @@ function AdminPanel({ user, onLogout }) {
 
   // search
   const [searchQuery, setSearchQuery] = useState("");
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
 
 
 
@@ -32,6 +50,8 @@ function AdminPanel({ user, onLogout }) {
   useEffect(() => {
     fetchCategories();
     fetchProducts();
+    fetchOrders();
+    fetchProductImages();
   }, []);
 
   const fetchCategories = async () => {
@@ -51,6 +71,26 @@ function AdminPanel({ user, onLogout }) {
       setProducts(data);
     } catch (err) {
       console.error('Failed to fetch products:', err);
+    }
+  };
+
+  const fetchProductImages = async () => {
+    try {
+      const response = await fetch(apiUrl('/admin/product-images'));
+      const data = await response.json();
+      setProductImages(data);
+    } catch (err) {
+      console.error('Failed to fetch product images:', err);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch(apiUrl('/admin/orders'));
+      const data = await response.json();
+      setOrders(data);
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
     }
   };
 
@@ -201,6 +241,44 @@ function AdminPanel({ user, onLogout }) {
     }
   };
 
+  const handleAssignImage = async (product, imageUrl = selectedImageUrl) => {
+    if (!imageUrl) {
+      setMessage('Select an image first');
+      return;
+    }
+
+    setAssigningProductId(product.productId);
+    setMessage('');
+
+    try {
+      const response = await fetch(apiUrl(`/products/${product.productId}/image`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl })
+      });
+
+      if (response.ok) {
+        setMessage(`Image linked to "${product.name}"`);
+        await fetchProducts();
+      } else {
+        setMessage('Failed to link image');
+      }
+    } catch (err) {
+      setMessage('Error: ' + err.message);
+    } finally {
+      setAssigningProductId(null);
+    }
+  };
+
+  const handleProductImageDrop = (event, product) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const droppedImageUrl = event.dataTransfer.getData('text/plain') || draggingImageUrl;
+    handleAssignImage(product, droppedImageUrl);
+    setDraggingImageUrl('');
+  };
+
   const getCategoryName = (categoryId) => {
     const cat = categories.find(c => c.categoryId === categoryId);
     return cat ? cat.name : 'Unknown';
@@ -218,6 +296,35 @@ function AdminPanel({ user, onLogout }) {
       if (!normalizedSearch) return true;
 
       return (product.name?.toLowerCase().includes(normalizedSearch) ||product.brand?.toLowerCase().includes(normalizedSearch) ||product.categoryName?.toLowerCase().includes(normalizedSearch));
+    });
+
+    const normalizedOrderSearch = orderSearchQuery.trim().toLowerCase();
+
+    const filteredOrders = orders.filter(order => {
+      if (!normalizedOrderSearch) return true;
+
+      const searchableOrderText = [
+        `#${order.orderId}`,
+        String(order.orderId),
+        order.customerName,
+        order.email,
+        order.street,
+        order.city,
+        order.postalCode,
+        order.country,
+        order.status,
+        Number(order.totalPrice).toFixed(2),
+        ...(order.items || []).flatMap(item => [
+          item.name,
+          String(item.quantity),
+          Number(item.price).toFixed(2)
+        ])
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchableOrderText.includes(normalizedOrderSearch);
     });
 
   return (
@@ -247,6 +354,21 @@ function AdminPanel({ user, onLogout }) {
             onClick={() => setActiveTab('list')}
           >
             Products ({products.length})
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'images' ? 'active' : ''}`}
+            onClick={() => setActiveTab('images')}
+          >
+            Images ({productImages.length})
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('orders');
+              fetchOrders();
+            }}
+          >
+            Orders ({orders.length})
           </button>
         </div>
       </header>
@@ -424,6 +546,7 @@ function AdminPanel({ user, onLogout }) {
                 <table className="products-table">
                   <thead>
                     <tr>
+                      <th>Image</th>
                       <th>Name</th>
                       <th>Brand</th>
                       <th>Category</th>
@@ -441,6 +564,15 @@ function AdminPanel({ user, onLogout }) {
                         className="product-row"
                         onClick={() => setSelectedProduct(product)}
                       >
+                        <td>
+                          <div className="product-table-image">
+                            {product.imageUrl ? (
+                              <img src={resolveAssetUrl(product.imageUrl)} alt={product.name} />
+                            ) : (
+                              <span>No image</span>
+                            )}
+                          </div>
+                        </td>
                         <td className="product-name">{product.name}</td>
                         <td>{product.brand}</td>
                         <td>
@@ -492,6 +624,148 @@ function AdminPanel({ user, onLogout }) {
                           >
                             🗑️
                           </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+
+        {activeTab === 'images' && (
+          <section className="admin-section image-manager-section">
+            <div className="section-heading-row">
+              <h2>Product Images</h2>
+              <button type="button" className="cancel-btn small" onClick={fetchProductImages}>
+                Refresh
+              </button>
+            </div>
+
+            <div className="image-manager-layout">
+              <div className="image-gallery">
+                {productImages.length === 0 ? (
+                  <p className="no-products">No images found in backend/ProductImages.</p>
+                ) : (
+                  productImages.map((image) => (
+                    <button
+                      key={image.url}
+                      type="button"
+                      className={`image-tile ${selectedImageUrl === image.url ? 'selected' : ''}`}
+                      draggable
+                      onClick={() => setSelectedImageUrl(image.url)}
+                      onDragStart={(event) => {
+                        setDraggingImageUrl(image.url);
+                        event.dataTransfer.setData('text/plain', image.url);
+                      }}
+                      onDragEnd={() => setDraggingImageUrl('')}
+                    >
+                      <img src={resolveAssetUrl(image.url)} alt={image.displayName || image.fileName} />
+                      <span>{image.fileName}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              <div className="image-product-list">
+                {products.map((product) => (
+                  <div
+                    key={product.productId}
+                    className="image-product-row"
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => handleProductImageDrop(event, product)}
+                  >
+                    <div className="product-table-image">
+                      {product.imageUrl ? (
+                        <img src={resolveAssetUrl(product.imageUrl)} alt={product.name} />
+                      ) : (
+                        <span>No image</span>
+                      )}
+                    </div>
+                    <div className="image-product-meta">
+                      <strong>{product.name}</strong>
+                      <span>{product.brand || getCategoryName(product.categoryId)}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="submit-btn small"
+                      disabled={!selectedImageUrl || assigningProductId === product.productId}
+                      onClick={() => handleAssignImage(product)}
+                    >
+                      {assigningProductId === product.productId ? 'Linking...' : 'Assign'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'orders' && (
+          <section className="admin-section orders-section">
+            <div className="section-heading-row">
+              <h2>Orders</h2>
+              <button type="button" className="cancel-btn small" onClick={fetchOrders}>
+                Refresh
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Search orders..."
+              value={orderSearchQuery}
+              onChange={(e) => setOrderSearchQuery(e.target.value)}
+              className="search-input"
+            />
+
+            {orders.length === 0 ? (
+              <p className="no-products">No orders yet.</p>
+            ) : filteredOrders.length === 0 ? (
+              <p className="no-products">No orders match your search.</p>
+            ) : (
+              <div className="products-table-wrapper">
+                <table className="products-table orders-table">
+                  <thead>
+                    <tr>
+                      <th>Order</th>
+                      <th>Date</th>
+                      <th>Customer</th>
+                      <th>Address</th>
+                      <th>Items</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.map(order => (
+                      <tr key={order.orderId}>
+                        <td className="product-name">#{order.orderId}</td>
+                        <td>{new Date(order.orderDate).toLocaleString()}</td>
+                        <td>
+                          <div className="order-customer">
+                            <strong>{order.customerName || 'Unknown customer'}</strong>
+                            <span>{order.email}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="order-address">
+                            {[order.street, order.postalCode, order.city, order.country]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="order-items">
+                            {(order.items || []).map((item, index) => (
+                              <span key={`${order.orderId}-${index}`}>
+                                {item.name} x{item.quantity}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="price">€ {Number(order.totalPrice).toFixed(2)}</td>
+                        <td>
+                          <span className="status-btn active">{order.status}</span>
                         </td>
                       </tr>
                     ))}

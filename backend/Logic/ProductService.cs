@@ -1,65 +1,26 @@
 using backend.Data;
-using StackExchange.Redis;
-using System.Text.Json;
 
 namespace backend.Logic;
 
 public class ProductService
 {
-    private const string ProductsCacheKey = "products:all";
-    private static readonly TimeSpan ProductsCacheDuration = TimeSpan.FromMinutes(5);
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly IProductRepository _products;
+    private readonly IProductCache _cache;
 
-    private readonly ProductRepository _products;
-    private readonly IConnectionMultiplexer _redis;
-    private readonly IDatabase _cache;
-
-    public ProductService(ProductRepository products, IConnectionMultiplexer redis)
+    public ProductService(IProductRepository products, IProductCache cache)
     {
         _products = products;
-        _redis = redis;
-        _cache = redis.GetDatabase();
+        _cache = cache;
     }
 
     public async Task<List<ProductDto>> GetAll()
     {
-        if (IsRedisAvailable())
-        {
-            try
-            {
-                var cachedProducts = await _cache.StringGetAsync(ProductsCacheKey);
-                if (cachedProducts.HasValue)
-                {
-                    var productsFromCache = JsonSerializer.Deserialize<List<ProductDto>>(
-                        cachedProducts.ToString(),
-                        JsonOptions);
-
-                    if (productsFromCache != null)
-                        return productsFromCache;
-                }
-            }
-            catch (RedisException ex)
-            {
-                Console.WriteLine($"[REDIS] Product cache read skipped: {ex.Message}");
-            }
-        }
+        var cachedProducts = await _cache.GetProducts();
+        if (cachedProducts != null)
+            return cachedProducts;
 
         var products = await _products.GetAll();
-
-        if (IsRedisAvailable())
-        {
-            try
-            {
-                await _cache.StringSetAsync(
-                    ProductsCacheKey,
-                    JsonSerializer.Serialize(products, JsonOptions),
-                    ProductsCacheDuration);
-            }
-            catch (RedisException ex)
-            {
-                Console.WriteLine($"[REDIS] Product cache write skipped: {ex.Message}");
-            }
-        }
+        await _cache.SetProducts(products);
 
         return products;
     }
@@ -160,6 +121,19 @@ public class ProductService
         return true;
     }
 
+    public async Task<bool> SetImage(int productId, string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+            return false;
+
+        var success = await _products.SetImage(productId, imageUrl.Trim());
+        if (!success)
+            return false;
+
+        await ClearProductsCache();
+        return true;
+    }
+
     public async Task<bool> AddStock(int productId, int amount)
     {
         if (amount <= 0)
@@ -201,21 +175,6 @@ public class ProductService
 
     private async Task ClearProductsCache()
     {
-        if (!IsRedisAvailable())
-            return;
-
-        try
-        {
-            await _cache.KeyDeleteAsync(ProductsCacheKey);
-        }
-        catch (RedisException ex)
-        {
-            Console.WriteLine($"[REDIS] Product cache clear skipped: {ex.Message}");
-        }
-    }
-
-    private bool IsRedisAvailable()
-    {
-        return _redis.IsConnected;
+        await _cache.ClearProducts();
     }
 }

@@ -2,7 +2,7 @@ using MySqlConnector;
 
 namespace backend.Data;
 
-public class ProductRepository
+public class ProductRepository : IProductRepository
 {
     private readonly string _connectionString;
 
@@ -287,7 +287,8 @@ public class ProductRepository
         int productId,
         int sizeId,
         int colorId,
-        int stock)
+        int stock,
+        string pictureUrl = "")
     {
         const string sql = @"
             INSERT INTO ProductVariants
@@ -316,7 +317,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@productId", productId);
         command.Parameters.AddWithValue("@sizeId", sizeId);
         command.Parameters.AddWithValue("@colorId", colorId);
-        command.Parameters.AddWithValue("@pictureUrl", "");
+        command.Parameters.AddWithValue("@pictureUrl", pictureUrl);
         command.Parameters.AddWithValue("@stock", stock);
         command.Parameters.AddWithValue("@minStock", 0);
         command.Parameters.AddWithValue("@maxStock", stock);
@@ -478,6 +479,87 @@ public class ProductRepository
         command.Parameters.AddWithValue("@sizeId", sizeId);
         command.Parameters.AddWithValue("@colorId", colorId);
         command.Parameters.AddWithValue("@stock", stock);
+
+        await command.ExecuteNonQueryAsync();
+    }
+
+    public async Task<bool> SetImage(int productId, string imageUrl)
+    {
+        using var connection = new MySqlConnection(_connectionString);
+
+        await connection.OpenAsync();
+
+        const string productSql = @"
+            SELECT StockQuantity
+            FROM Products
+            WHERE ProductId = @productId
+            LIMIT 1
+        ";
+
+        await using var productCommand = new MySqlCommand(productSql, connection);
+        productCommand.Parameters.AddWithValue("@productId", productId);
+
+        var stockResult = await productCommand.ExecuteScalarAsync();
+
+        if (stockResult == null)
+            return false;
+
+        var stockQuantity = Convert.ToInt32(stockResult);
+
+        await using var transaction = await connection.BeginTransactionAsync();
+
+        var variantId = await GetFirstVariantId(connection, transaction, productId);
+
+        if (variantId.HasValue)
+        {
+            await UpdateVariantImage(connection, transaction, variantId.Value, imageUrl);
+        }
+        else
+        {
+            var colorId = await GetOrCreateLookupId(
+                connection,
+                transaction,
+                "Colors",
+                "ColorId",
+                "Default");
+
+            var sizeId = await GetOrCreateLookupId(
+                connection,
+                transaction,
+                "Sizes",
+                "SizeId",
+                "Default");
+
+            await AddVariant(
+                connection,
+                transaction,
+                productId,
+                sizeId,
+                colorId,
+                stockQuantity,
+                imageUrl);
+        }
+
+        await transaction.CommitAsync();
+
+        return true;
+    }
+
+    private static async Task UpdateVariantImage(
+        MySqlConnection connection,
+        MySqlTransaction transaction,
+        int variantId,
+        string imageUrl)
+    {
+        const string sql = @"
+            UPDATE ProductVariants
+            SET PictureUrl = @pictureUrl
+            WHERE ProductVariantId = @variantId
+        ";
+
+        await using var command = new MySqlCommand(sql, connection, transaction);
+        command.Parameters.AddWithValue("@variantId", variantId);
+        command.Parameters.AddWithValue("@pictureUrl", imageUrl);
 
         await command.ExecuteNonQueryAsync();
     }
